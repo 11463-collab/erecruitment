@@ -3,563 +3,264 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>E-Recruitment - Double Coupler Studio</title>
-    
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <title>Dashboard - DCS Recruitment</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
-    
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
     <style>
         :root { 
-            --bg-dark: #030712;
-            --bg-panel: #0b1120;
-            --card-glass: rgba(30, 41, 59, 0.4); 
+            --bg: #0f172a; 
+            --card: #1e293b; 
             --accent: #ffca28; 
-            --accent-glow: rgba(255, 202, 40, 0.5);
-            --text-main: #f8fafc; 
-            --text-dim: #94a3b8;
-            --glass-border: rgba(255, 255, 255, 0.08);
+            --text: #f8fafc; 
+            --muted: #94a3b8; 
+            --glass: rgba(30, 41, 59, 0.7); 
+            --danger: #ef4444;
+            --success: #22c55e;
         }
         
-        body { 
-            background: var(--bg-dark);
-            background-image: 
-                radial-gradient(circle at 10% 10%, rgba(59, 130, 246, 0.1) 0%, transparent 40%),
-                radial-gradient(circle at 90% 90%, rgba(37, 99, 235, 0.08) 0%, transparent 40%);
-            color: var(--text-main); 
-            font-family: 'Outfit', sans-serif; 
-            margin: 0; 
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
+        body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; margin: 0; padding: 0; }
 
-        /* Main Split Container */
-        .split-container {
-            display: flex;
-            width: 100%;
-            max-width: 1100px;
-            height: auto;
-            min-height: 650px;
-            margin: 20px;
-            background: var(--bg-panel);
-            border-radius: 32px;
-            overflow: hidden;
-            border: 1px solid var(--glass-border);
-            box-shadow: 0 40px 80px -15px rgba(0, 0, 0, 0.8);
+        header { 
+            background: var(--glass); backdrop-filter: blur(10px);
+            padding: 12px 5%; display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid #334155; position: sticky; top: 0; z-index: 100;
         }
+        .user-nav { display: flex; align-items: center; gap: 15px; cursor: pointer; padding: 5px 15px; border-radius: 50px; transition: 0.3s; background: rgba(255,255,255,0.05); }
+        .user-nav:hover { background: rgba(255,202,40,0.1); }
+        .avatar { width: 32px; height: 32px; background: var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #000; font-weight: bold; }
 
-        /* --- SISI KIRI: INFO PANEL --- */
-        .info-panel {
-            flex: 1.2;
-            padding: 60px;
-            background: linear-gradient(135deg, rgba(17, 24, 39, 0.8) 0%, rgba(3, 7, 18, 0.9) 100%);
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
+        .container { max-width: 1000px; margin: 30px auto; padding: 0 20px; }
+        .dashboard-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+        .card { background: var(--card); border-radius: 20px; border: 1px solid #334155; padding: 25px; margin-bottom: 20px; }
+
+        .hero { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); position: relative; overflow: hidden; }
+        .hero::before { content: ''; position: absolute; top: -50px; right: -50px; width: 150px; height: 150px; background: var(--accent); filter: blur(100px); opacity: 0.1; }
+
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
+        .stat-item { background: rgba(15, 23, 42, 0.5); padding: 15px; border-radius: 15px; border: 1px solid #334155; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .stat-item i { color: var(--accent); font-size: 1.2rem; margin-bottom: 8px; }
+        .stat-item span { display: block; font-size: 0.8rem; color: var(--muted); }
+        .stat-item b { font-size: 1.1rem; }
+
+        .steps { list-style: none; padding: 0; margin: 20px 0; }
+        .step-item { display: flex; align-items: center; gap: 15px; margin-bottom: 15px; opacity: 0.4; transition: 0.3s; }
+        .step-item.active { opacity: 1; color: var(--accent); font-weight: bold; }
+
+        .btn-exam {
+            background: var(--accent); color: #000; border: none; padding: 18px; border-radius: 12px;
+            font-size: 1rem; font-weight: bold; cursor: pointer; transition: 0.3s;
+            display: flex; align-items: center; justify-content: center; gap: 10px; text-decoration: none; width: 100%; box-sizing: border-box;
         }
+        .btn-exam:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(255, 202, 40, 0.2); }
 
-        /* Railway Line Deco */
-        .info-panel::before {
-            content: "";
-            position: absolute;
-            bottom: 0; left: 0; width: 100%; height: 100%;
-            background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgdmlld0JveD0iMCAwIDQwIDQwIj48ZyBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiMzYjgyZjYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTAgMGg0MHY0MEgwVjB6bTIwIDIwaDIwdjIwSDIWMjB6TTAgMjBoMjB2MjBIMFYyMHoyMCAwaDIwdjIwSDIwVjB6Ii8+PC9nPjwvZz48L3N2Zz4=');
-            opacity: 0.3;
-            z-index: 0;
+        .btn-status {
+            margin-top: 15px; background: #334155; color: var(--accent); border: 1px solid var(--accent);
+            padding: 10px; border-radius: 10px; text-decoration: none; display: block; text-align: center;
+            font-size: 0.9rem; font-weight: bold; transition: 0.3s; padding-bottom: 5px;
         }
+        .btn-status:hover { background: var(--accent); color: #000; }
 
-        .info-content {
-            position: relative;
-            z-index: 1;
-        }
+        .announcement { background: rgba(255, 202, 40, 0.05); border-left: 4px solid var(--accent); padding: 15px; border-radius: 0 15px 15px 0; }
+        .announcementred { background: rgba(239, 68, 68, 0.05); border-left: 4px solid var(--danger); padding: 15px; border-radius: 0 15px 15px 0; }
 
-        .badge-open {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            background: rgba(75, 246, 59, 0.15);
-            color: #22c55e;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: 500;
-            margin-bottom: 20px;
-            border: 1px solid rgba(75, 246, 59, 0.3);
-        }
+        .btn-logout { background: #ef4444; border: none; color: #fff; cursor: pointer; font-size: 0.8rem; padding: 8px 15px; border-radius: 8px; display: flex; align-items: center; gap: 8px; font-weight: bold; }
 
-        .badge-closed {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            background: rgba(239, 68, 68, 0.15);
-            color: #ef4444;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: 500;
-            margin-bottom: 20px;
-            border: 1px solid rgba(239, 68, 68, 0.3);
-        }
-
-        .info-panel h1 {
-            font-size: 3rem;
-            font-weight: 700;
-            line-height: 1.1;
-            margin: 0 0 20px;
-            background: linear-gradient(to right, #f8fafc, #a78bfa);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .info-panel p.main-desc {
-            color: var(--text-dim);
-            font-size: 1.1rem;
-            line-height: 1.6;
-            margin-bottom: 40px;
-            max-width: 480px;
-        }
-
-        /* Feature List (Hal Bagus) */
-        .feature-list {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 25px;
-        }
-
-        .feature-item {
-            display: flex;
-            align-items: flex-start;
-            gap: 15px;
-        }
-
-        .feature-icon {
-            width: 44px; height: 44px;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid var(--glass-border);
-            border-radius: 12px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            color: var(--accent);
-            font-size: 1.2rem;
-            flex-shrink: 0;
-            transition: 0.3s;
-        }
-
-        .feature-item:hover .feature-icon {
-            background: var(--accent);
-            color: white;
-            transform: scale(1.1);
-            box-shadow: 0 0 15px var(--accent-glow);
-        }
-
-        .feature-text h3 {
-            margin: 0 0 5px;
-            font-size: 1rem;
-            font-weight: 600;
-        }
-
-        .feature-text p {
-            margin: 0;
-            font-size: 0.85rem;
-            color: var(--text-dim);
-            line-height: 1.4;
-        }
-
-        /* --- SISI KANAN: FORM PANEL (Glassmorphism) --- */
-        .form-panel {
-            flex: 1;
-            padding: 60px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background: rgba(15, 23, 42, 0.2);
-            border-left: 1px solid var(--glass-border);
-        }
-
-        .box { 
-            width: 100%;
-            max-width: 360px;
-            text-align: center; 
-        }
-
-        .logo-area {
-            margin-bottom: 20px;
-        }
-        .logo-area img {
-            width: 100px;
-            height: 100px;
-            object-fit: contain;
-        }
-
-        .logo-icon {
-            font-size: 3rem;
-            color: var(--accent);
-            filter: drop-shadow(0 0 10px var(--accent-glow));
-        }
-
-        h2 { 
-            margin: 0 0 10px; 
-            font-size: 1.8rem; 
-            font-weight: 700; 
-        }
-
-        p.subtitle { 
-            color: var(--text-dim); 
-            font-size: 0.9rem; 
-            margin-bottom: 30px; 
-            line-height: 1.5;
-        }
-
-        /* Input Styling */
-        .input-group {
-            position: relative;
-            margin-bottom: 14px;
-            text-align: left;
-        }
-
-        .input-group i {
-            position: absolute;
-            left: 14px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--text-dim);
-            transition: 0.3s;
-            font-size: 0.9rem;
-        }
-
-        input, select { 
-            width: 100%; 
-            padding: 12px 14px 12px 40px; 
-            border-radius: 12px; 
-            border: 1px solid var(--glass-border); 
-            background: rgba(15, 23, 42, 0.6); 
-            color: white; 
-            box-sizing: border-box; 
-            font-size: 0.95rem;
-            transition: all 0.3s;
-            font-family: inherit;
-        }
-
-        input:focus, select:focus {
-            outline: none;
-            border-color: var(--accent);
-            background: rgba(15, 23, 42, 0.9);
-            box-shadow: 0 0 15px rgba(59, 130, 246, 0.1);
-        }
-
-        input:focus + i, .input-group:focus-within i {
-            color: var(--accent);
-        }
-
-        select { appearance: none; cursor: pointer; }
-
-        /* Button Styling */
-        button { 
-            width: 100%;
-            padding: 14px;
-            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-            color: white;
-            font-weight: 600;
-            font-size: 0.95rem;
-            border: none;
-            border-radius: 12px;
-            cursor: pointer;
-            margin-top: 20px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 10px;
-            transition: 0.3s;
-        }
-
-        button:hover { 
-            transform: translateY(-2px); 
-            box-shadow: 0 10px 20px -5px rgba(37, 99, 235, 0.4);
-        }
-
-        button:disabled { 
-            background: #475569; 
-            opacity: 0.6;
-            cursor: not-allowed; 
-            transform: none; 
-        }
-
-        .admin-link { 
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            margin-top: 30px; 
-            color: var(--text-dim); 
-            font-size: 0.8rem; 
-            text-decoration: none; 
-            transition: 0.3s;
-        }
-
-        .admin-link:hover { color: var(--text-main); }
-
-        .reg-label {
-            display: block;
-            font-size: 0.75rem;
-            color: var(--accent);
-            margin-bottom: 10px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            text-align: left;
-        }
-
-        /* Responsive Breakpoint */
-        @media (max-width: 900px) {
-            .split-container {
-                flex-direction: column;
-                height: auto;
-                border-radius: 20px;
-            }
-            .info-panel {
-                padding: 40px;
-                text-align: center;
-            }
-            .info-panel h1 { font-size: 2.2rem; }
-            .info-panel p.main-desc { margin-left: auto; margin-right: auto; }
-            .feature-list {
-                grid-template-columns: 1fr;
-                text-align: left;
-                max-width: 400px;
-                margin: 0 auto;
-            }
-            .form-panel {
-                padding: 40px;
-                border-left: none;
-                border-top: 1px solid var(--glass-border);
-            }
-        }
+        @media (max-width: 850px) { .dashboard-grid { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
 
-    <div class="container animate__animated animate__fadeIn">
-        <div class="split-container">
-            
-            <div class="info-panel">
-                <div class="info-content">
-                    <div class="badge-open" id="infobadge">
-                        <i class="fa-solid fa-star"></i>
-                        <span>Open</span>
+<header>
+    <div style="font-weight: 800; font-size: 1.2rem; color: var(--accent);">DCS <span style="color: white;">Recruitment</span></div>
+    <div style="display: flex; align-items: center; gap: 15px;">
+        <div class="user-nav" onclick="window.location.href='status_peserta.html'">
+            <span id="header-nama" style="font-size: 0.9rem;">Memuat...</span>
+            <div class="avatar" id="avatar-initial">?</div>
+        </div>
+        <button class="btn-logout" onclick="logout()">
+            <i class="fa-solid fa-power-off"></i> Keluar
+        </button>
+    </div>
+</header>
+
+<div class="container">
+    <div class="dashboard-grid">
+        
+        <div class="main-content">
+            <div class="card hero">
+                <h1 id="welcome-user" style="margin: 0;">Halo!</h1>
+                <p style="color: var(--muted); margin: 10px 0 20px;">Berikut adalah ringkasan proses lamaran Anda saat ini.</p>
+                
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <i class="fa-solid fa-user-clock"></i>
+                        <span>Hasil Seleksi</span>
+                        <b id="stat-status">Waiting...</b>
+                        <div id="status-link-container"></div>
                     </div>
-                    
-                    <h1>Welcome to <br>DCS Recruitment</h1>
-                    <p class="main-desc">
-                        Halaman Recruitment resmi dari Double Coupler Studio <br>
-                        Jadilah bagian dari kami sekarang.
-                    </p>
-                    <ul class="feature-list">
-                        <li class="feature-item">
-                            <div class="feature-icon"><i class="fa-solid fa-user-tie"></i></div>
-                            <div class="feature-text">
-                                <h3>developer dan staff</h3>
-                                <p>developers dan staff yang profesional dan berpengalaman</p>
-                            </div>
-                        </li>
-                        <li class="feature-item">
-                            <div class="feature-icon"><i class="fa-solid fa-chart-line"></i></div>
-                            <div class="feature-text">
-                                <h3>Perkembangan Karir</h3>
-                                <p>Jalur karir yang jelas dan kesempatan pengembangan diri</p>
-                            </div>
-                        </li>
-                        <li class="feature-item">
-                            <div class="feature-icon"><i class="fa-solid fa-handshake"></i></div>
-                            <div class="feature-text">
-                                <h3>Kolaborasi</h3>
-                                <p>Berkolaborasi dengam studio kereta api lainnya di-roblox</p>
-                            </div>
-                        </li>
-                        <li class="feature-item">
-                            <div class="feature-icon"><i class="fa-solid fa-shield"></i></div>
-                            <div class="feature-text">
-                                <h3>Keamanan Data</h3>
-                                <p>Kami menjaga kerahasiaan data pribadi Anda dengan standar keamanan tinggi</p>
-                            </div>
-                        </li>
-                    </ul>
+                    <div class="stat-item">
+                        <i class="fa-solid fa-file-circle-check"></i>
+                        <span>Ujian Asesmen</span>
+                        <b id="stat-ujian">Belum</b>
+                    </div>
                 </div>
             </div>
 
-            <div class="form-panel">
-                <div class="box">
-                    <div class="logo-area">
-                        <div class="logo-icon"><img src="https://doublecouplerstudio.benevolentclass.my.id/logo/l1.png" alt="Logo"></div>
+            <div class="card">
+                <h3 style="margin-top: 0;"><i class="fa-solid fa-briefcase" style="color: var(--accent); margin-right: 10px;"></i> Detail Lamaran</h3>
+                <div style="display: flex; justify-content: space-between; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 12px;">
+                    <div>
+                        <span style="color: var(--muted); font-size: 0.8rem;">Posisi:</span>
+                        <div id="disp-posisi" style="font-weight: bold;">-</div>
                     </div>
-                    
-                    <h2>Daftar atau Masuk</h2>
-                    <p class="subtitle">Gunakan email Anda untuk masuk atau mendaftar baru.</p>
-                    
-                    <form id="mainForm">
-                        <div class="input-group">
-                            <i class="fa-solid fa-envelope"></i>
-                            <input type="email" id="email" placeholder="Alamat Email Aktif" required>
-                        </div>
-                        
-                        <div id="regFields" style="display:none; margin-top: 20px;" class="animate__animated animate__fadeInSmall">
-                            <span class="reg-label">Lengkapi Profil Anda</span>
-                            
-                            <div class="input-group">
-                                <i class="fa-solid fa-user"></i>
-                                <input type="text" id="nama" placeholder="Nama Lengkap" required>
-                            </div>
-
-                            <div class="input-group">
-                                <i class="fa-solid fa-whatsapp"></i>
-                                <input type="tel" id="phone" placeholder="Nomor WhatsApp">
-                            </div>
-                            
-                            <div class="input-group">
-                                <i class="fa-solid fa-briefcase"></i>
-                                <select id="posisi" required>
-                                    <option value="" disabled selected>Pilih Posisi</option>
-                                    <option value="Developer">Developer</option>
-                                    <option value="Scripter">Scripter & ICT</option>
-                                    <option value="Desainer">Desainer</option>
-                                    <option value="Staff">Staff</option>
-                                </select>
-                            </div>
-
-                            <div class="input-group">
-                                <i class="fa-solid fa-location-dot"></i>
-                                <select id="daop" required>
-                                    <option value="" disabled selected>Daop / Divre</option>
-                                    <optgroup label="Daerah Operasi (Jawa)">
-                                        <option value="Daop 1 Jakarta">Daop 1 Jakarta</option>
-                                        <option value="Daop 2 Bandung">Daop 2 Bandung</option>
-                                        <option value="Daop 3 Cirebon">Daop 3 Cirebon</option>
-                                        <option value="Daop 4 Semarang">Daop 4 Semarang</option>
-                                        <option value="Daop 5 Purwokerto">Daop 5 Purwokerto</option>
-                                        <option value="Daop 6 Yogyakarta">Daop 6 Yogyakarta</option>
-                                        <option value="Daop 7 Madiun">Daop 7 Madiun</option>
-                                        <option value="Daop 8 Surabaya">Daop 8 Surabaya</option>
-                                        <option value="Daop 9 Jember">Daop 9 Jember</option>
-                                    </optgroup>
-                                    <optgroup label="Divisi Regional (Sumatera)">
-                                        <option value="Divre I Sumatera Utara">Divre I Sumatera Utara</option>
-                                        <option value="Divre II Sumatera Selatan">Divre II Sumatera Selatan</option>
-                                        <option value="Divre III Palembang">Divre III Palembang</option>
-                                    </optgroup>
-                                </select>
-                            </div>
-                        </div>
-                        
-                        <button type="submit" id="btnAction">
-                            <span>Lanjutkan</span>
-                            <i class="fa-solid fa-arrow-right"></i>
-                        </button>
-                    </form>
-
-                    <a href="/e-recru/administrator/admin_login.html" class="admin-link">
-                        <i class="fa-solid fa-user-lock"></i> Portal Admin
-                    </a>
+                    <div style="text-align: right;">
+                        <span style="color: var(--muted); font-size: 0.8rem;">Wilayah:</span>
+                        <div id="disp-daop" style="font-weight: bold;">-</div>
+                    </div>
                 </div>
             </div>
 
+            <div class="card" id="exam-card">
+                <p>Sinkronisasi data...</p>
+            </div>
+        </div>
+
+        <div class="sidebar">
+            <div class="card">
+                <h4 style="margin-top: 0;">Alur Rekrutmen</h4>
+                <ul class="steps">
+                    <li class="step-item active"><i class="fa-solid fa-circle-check"></i> Registrasi Akun</li>
+                    <li class="step-item" id="step-exam"><i class="fa-solid fa-circle-dot"></i> Ujian Asesmen Online</li>
+                    <li class="step-item" id="step-final"><i class="fa-solid fa-circle-dot"></i> Hasil Seleksi Akhir</li>
+                </ul>
+            </div>
+
+            <div class="card announcement">
+                <h4 style="margin: 0; color: var(--accent);"><i class="fa-solid fa-circle-info"></i> Panduan Ujian</h4>
+                <p style="font-size: 0.85rem; margin-top: 10px; line-height: 1.6;">
+                    • Pastikan koneksi internet anda stabil.<br>
+                    • Gunakan browser terbaru.<br>
+                    • Patuhi aturan ujian yang berlaku.
+                </p>
+            </div>
+
+            <div class="card announcementred">
+                <h4 style="margin: 0; color: #f87171;"><i class="fa-solid fa-triangle-exclamation"></i> Peringatan</h4>
+                <p style="font-size: 0.82rem; margin-top: 10px; line-height: 1.5; color: #fca5a5;">
+                    Sistem mendeteksi kecurangan secara otomatis. Pelanggaran berakibat <b>Diskualifikasi</b>:
+                </p>
+                <ul style="font-size: 0.8rem; margin-top: 8px; padding-left: 15px; color: #fca5a5; line-height: 1.6;">
+                    <li>Membuka tab/aplikasi lain.</li>
+                    <li>Screenshot atau merekam soal.</li>
+                    <li>Bekerja sama dengan orang lain.</li>
+                </ul>
+            </div>
         </div>
     </div>
+</div>
 
-    <script>
-        const SUPABASE_URL = "https://bzlewbetssmjrsmfbcmy.supabase.co";
-        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ6bGV3YmV0c3NtanJzbWZiY215Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzNDA2MjgsImV4cCI6MjA5MTkxNjYyOH0.qO2AHNwe9Rlh1DImyJJZLzxXoHPSTRKmQZYwWqz1rjQ";
-        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+<script>
+    const SUPABASE_URL = "https://bzlewbetssmjrsmfbcmy.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ6bGV3YmV0c3NtanJzbWZiY215Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzNDA2MjgsImV4cCI6MjA5MTkxNjYyOH0.qO2AHNwe9Rlh1DImyJJZLzxXoHPSTRKmQZYwWqz1rjQ";
+    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        let isNewUser = false;
+    async function initDashboard() {
+        let localUser = JSON.parse(localStorage.getItem('dcs_current_user'));
+        if (!localUser) { window.location.href = 'index.html'; return; }
 
-        document.getElementById('mainForm').onsubmit = async (e) => {
-            e.preventDefault();
-            const btn = document.getElementById('btnAction');
-            const emailInput = document.getElementById('email').value.trim();
+        const { data: dbUser, error } = await _supabase
+            .from('applicants')
+            .select('*')
+            .eq('email', localUser.email)
+            .single();
 
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Mengecek...</span>';
+        if (!error && dbUser) {
+            localStorage.setItem('dcs_current_user', JSON.stringify(dbUser));
+            localUser = dbUser;
+        }
 
-            try {
-                const { data, error } = await _supabase
-                    .from('applicants')
-                    .select('*')
-                    .eq('email', emailInput);
+        document.getElementById('header-nama').innerText = localUser.nama;
+        document.getElementById('avatar-initial').innerText = localUser.nama.charAt(0).toUpperCase();
+        document.getElementById('welcome-user').innerText = `Halo, ${localUser.nama.split(' ')[0]}!`;
+        document.getElementById('disp-posisi').innerText = localUser.posisi;
+        document.getElementById('disp-daop').innerText = localUser.daop;
 
-                if (error) throw error;
+        const statStatus = document.getElementById('stat-status');
+        const linkContainer = document.getElementById('status-link-container');
+        
+        if (localUser.status === 'Lolos' || localUser.status === 'Gagal') {
+            statStatus.innerText = "Data tersedia"; 
+            statStatus.style.color = localUser.status === 'Lolos' ? "var(--success)" : "var(--danger)";
+            
+            linkContainer.innerHTML = `<a href="status.html" class="btn-status">Lihat Detail <i class="fa-solid fa-arrow-right-long"></i></a>`;
+        } else {
+            statStatus.innerText = "Waiting..."; 
+            statStatus.style.color = "var(--muted)";
+        }
 
-                if (data && data.length > 0) {
-                    localStorage.setItem('dcs_current_user', JSON.stringify(data[0]));
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Berhasil Masuk',
-                        text: 'Mengalihkan ke Dashboard...',
-                        timer: 1500,
-                        showConfirmButton: false,
-                        background: '#111827',
-                        color: '#fff'
-                    }).then(() => {
-                        window.location.href = 'dashboard.html';
-                    });
+        const statUjian = document.getElementById('stat-ujian');
+        const hasFinishedExam = localUser.skor_ujian !== null && localUser.skor_ujian !== undefined && localUser.skor_ujian > 0;
+        
+        if (hasFinishedExam) {
+            statUjian.innerText = "Sudah";
+            statUjian.style.color = "var(--success)";
+        } else {
+            statUjian.innerText = "Belum";
+            statUjian.style.color = "var(--danger)";
+        }
 
-                } else if (!isNewUser) {
-                    isNewUser = true;
-                    document.getElementById('regFields').style.display = 'block';
-                    document.getElementById('email').readOnly = true;
-                    document.getElementById('email').parentElement.style.opacity = '0.5';
-                    
-                    btn.disabled = false;
-                    btn.innerHTML = '<span>Daftar Sekarang</span> <i class="fa-solid fa-paper-plane"></i>';
-                    
-                    Swal.fire({
-                        title: 'Email Belum Terdaftar',
-                        text: 'Silakan lengkapi biodata Anda untuk mendaftar.',
-                        icon: 'info',
-                        background: '#111827',
-                        color: '#fff',
-                        confirmButtonColor: '#3b82f6'
-                    });
-                } else {
-                    const payload = {
-                        email: emailInput,
-                        nama: document.getElementById('nama').value,
-                        phone: document.getElementById('phone').value,
-                        posisi: document.getElementById('posisi').value,
-                        daop: document.getElementById('daop').value,
-                        status: 'Pending',
-                        skor_ujian: 0
-                    };
+        const examCard = document.getElementById('exam-card');
+        const stepExam = document.getElementById('step-exam');
+        const stepFinal = document.getElementById('step-final');
 
-                    if(!payload.nama || !payload.posisi) {
-                        throw new Error("Mohon lengkapi Nama dan Posisi.");
-                    }
-
-                    const { data: insData, error: insError } = await _supabase
-                        .from('applicants')
-                        .insert([payload])
-                        .select();
-
-                    if (insError) throw insError;
-
-                    localStorage.setItem('dcs_current_user', JSON.stringify(insData[0]));
-                    window.location.href = 'dashboard.html';
-                }
-
-            } catch (err) {
-                btn.disabled = false;
-                btn.innerHTML = '<span>Coba Lagi</span> <i class="fa-solid fa-rotate-right"></i>';
-                Swal.fire({ icon: 'error', title: 'Kesalahan', text: err.message, background: '#111827', color: '#fff' });
+        if (hasFinishedExam) {
+            stepExam.classList.add('active');
+            stepExam.querySelector('i').className = "fa-solid fa-circle-check";
+            
+            if(localUser.status !== 'Pending') {
+                stepFinal.classList.add('active');
+                stepFinal.querySelector('i').className = "fa-solid fa-circle-check";
             }
-        };
-    </script>
+
+            examCard.innerHTML = `
+                <div style="text-align: center; padding: 15px;">
+                    <i class="fa-solid fa-check" style="font-size: 3rem; color: var(--success); margin-bottom: 15px;"></i>
+                    <h3>Ujian Selesai</h3>
+                    <p style="color: var(--muted); font-size: 0.9rem;">
+                        Terima kasih telah berpartisipasi dalam recruitment kami.
+                    </p>
+                </div>
+            `;
+        } else {
+            examCard.innerHTML = `
+                <h3 style="margin-top: 0;">Tugas Tertunda</h3>
+                <p style="color: var(--muted); font-size: 0.9rem; margin-bottom: 20px;">Silakan selesaikan <b>Asesmen Kompetensi Dasar</b> sekarang.</p>
+                <a href="test/kerjakan/soal.html" class="btn-exam">
+                    <i class="fa-solid fa-play-circle"></i> Mulai Ujian Sekarang
+                </a>
+            `;
+        }
+    }
+
+    function logout() {
+        Swal.fire({
+            title: 'Keluar Sesi?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#ffca28',
+            cancelButtonColor: '#ef4444',
+            confirmButtonText: 'Ya',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                localStorage.clear();
+                window.location.href = '/';
+            }
+        });
+    }
+
+    initDashboard();
+</script>
 </body>
 </html>

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Ujian Selesai - DCS</title>
+    <style>
+        :root { --bg: #0f172a; --card: #1e293b; --accent: #3b82f6; --text: #f8fafc; }
+        body { background: var(--bg); color: var(--text); font-family: sans-serif; padding: 40px 20px; }
+        .container { max-width: 600px; margin: auto; text-align: center; }
+        .review-box { background: var(--card); padding: 20px; border-radius: 15px; text-align: left; margin-top: 20px; border: 1px solid #334155; }
+        .item { border-bottom: 1px solid #334155; padding: 10px 0; }
+        .btn { display: inline-block; background: var(--accent); color: white; padding: 15px 30px; border-radius: 10px; text-decoration: none; margin-top: 20px; font-weight: bold; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <i class="fa-solid fa-circle-check" style="font-size: 4rem; color: #22c55e;"></i>
+    <h1>Ujian Telah Terkirim!</h1>
+    <p>Terima kasih telah menyelesaikan sesi ujian. Berikut adalah ringkasan jawaban yang Anda kirim:</p>
+
+    <div class="review-box" id="reviewContent">
+        </div>
+
+    <a href="/e-recru/dashboard.html" class="btn">Kembali ke Dashboard</a>
+</div>
+
+<script>
+    const details = JSON.parse(localStorage.getItem('last_exam_details'));
+    const container = document.getElementById('reviewContent');
+
+    if (!details) {
+        window.location.href = "/e-recru/dashboard.html";
+    }
+
+    details.forEach((item, i) => {
+        container.innerHTML += `
+            <div class="item">
+                <small style="color:#94a3b8">Soal ${i+1}</small>
+                <p style="margin: 5px 0;">${item.pertanyaan}</p>
+                <p style="margin: 0; color: #3b82f6;">Jawaban Anda: <b>${item.jawabanUser}</b></p>
+            </div>
+        `;
+    });
+</script>
+</body>
+</html>

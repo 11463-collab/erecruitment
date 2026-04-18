@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login - DCS</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root { --bg: #0f172a; --card: #1e293b; --accent: #3b82f6; --text: #f8fafc; }
+        body { 
+            background: var(--bg); 
+            color: var(--text); 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            margin: 0; 
+            font-family: 'Inter', sans-serif; 
+        }
+        .login-box { 
+            background: var(--card); 
+            padding: 40px; 
+            border-radius: 20px; 
+            border: 1px solid #334155; 
+            text-align: center; 
+            width: 350px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+        input { 
+            width: 100%; 
+            padding: 14px; 
+            margin: 10px 0; 
+            border-radius: 10px; 
+            border: 1px solid #334155; 
+            background: #0f172a; 
+            color: white; 
+            box-sizing: border-box; 
+            transition: 0.3s;
+        }
+        input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2); }
+        button { 
+            width: 100%; 
+            padding: 14px; 
+            background: var(--accent); 
+            border: none; 
+            color: white; 
+            border-radius: 10px; 
+            cursor: pointer; 
+            font-weight: bold; 
+            margin-top: 15px;
+            transition: 0.3s;
+        }
+        button:hover { opacity: 0.9; transform: translateY(-2px); }
+        .swal2-popup { background: #1e293b !important; color: white !important; border-radius: 15px !important; }
+    </style>
+</head>
+<body>
+
+    <div class="login-box animate__animated animate__fadeInDown">
+        <h2 style="margin-top:0">DCS <span style="color:var(--accent)">Admin</span></h2>
+        <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 25px;">Silakan masuk ke panel manajemen</p>
+        
+        <form id="loginForm">
+            <input type="text" id="usn" placeholder="Username" required>
+            <input type="password" id="psw" placeholder="Password" required>
+            <button type="submit" id="btnLogin">Masuk Sekarang</button>
+        </form>
+    </div>
+
+    <script>
+        const SUPABASE_URL = "https://bzlewbetssmjrsmfbcmy.supabase.co";
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ6bGV3YmV0c3NtanJzbWZiY215Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzNDA2MjgsImV4cCI6MjA5MTkxNjYyOH0.qO2AHNwe9Rlh1DImyJJZLzxXoHPSTRKmQZYwWqz1rjQ";
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        document.getElementById('loginForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const usn = document.getElementById('usn').value;
+            const psw = document.getElementById('psw').value;
+            const btn = document.getElementById('btnLogin');
+
+            btn.innerText = "Mengecek...";
+            btn.disabled = true;
+
+            try {
+                // Query ke tabel 'admin'
+                const { data, error } = await _supabase
+                    .from('admin')
+                    .select('*')
+                    .eq('username', usn)
+                    .eq('password', psw)
+                    .single();
+
+                if (error || !data) {
+                    throw new Error("Username atau Password salah!");
+                }
+
+                // Jika Berhasil Login
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Login Berhasil',
+                    text: `Selamat datang, ${data.role}!`,
+                    timer: 1500,
+                    showConfirmButton: false
+                }).then(() => {
+                    // Simpan data session
+                    const sessionData = {
+                        isAdmin: true,
+                        role: data.role,
+                        username: data.username,
+                        loginTime: new Date().getTime() // Simpan waktu login
+                    };
+                    
+                    sessionStorage.setItem('adminSession', JSON.stringify(sessionData));
+                    
+                    // Redirect ke dashboard admin kamu
+                    window.location.href = '/e-recru/administrator/auth-6gaqyuaw/dashboard.html';
+                });
+
+            } catch (err) {
+                Swal.fire('Gagal', err.message, 'error');
+                btn.innerText = "Masuk Sekarang";
+                btn.disabled = false;
+            }
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DCS Admin Panel - Management</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root { --bg: #0f172a; --card: #1e293b; --accent: #3b82f6; --text: #f8fafc; --muted: #94a3b8; --success: #22c55e; --danger: #ef4444; --warning: #f59e0b; }
+        body { margin: 0; font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); overflow-x: hidden; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 30px 20px; }
+        
+        /* Header & Controls */
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .controls-group { display: flex; align-items: center; gap: 10px; }
+        
+        /* Tombol Refresh */
+        .btn-refresh { background: var(--card); color: white; border: 1px solid #334155; width: 40px; height: 40px; border-radius: 10px; cursor: pointer; transition: 0.3s; display: flex; align-items: center; justify-content: center; }
+        .btn-refresh:hover { border-color: var(--accent); color: var(--accent); transform: rotate(90deg); }
+
+        /* Recruitment Status Box */
+        .recru-status-box { display: flex; align-items: center; gap: 12px; background: rgba(15, 23, 42, 0.5); padding: 8px 15px; border-radius: 12px; border: 1px solid #334155; }
+        #recru-label { font-size: 0.75rem; font-weight: bold; }
+        
+        /* Toggle Switch */
+        .switch { position: relative; display: inline-block; width: 44px; height: 22px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; inset: 0; background-color: #334155; transition: .4s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--success); }
+        input:checked + .slider:before { transform: translateX(22px); }
+
+        /* User Menu */
+        .user-menu { position: relative; }
+        .user-btn { background: var(--card); color: white; border: 1px solid #334155; padding: 10px 18px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; gap: 10px; }
+        .dropdown-content { display: none; position: absolute; right: 0; background: var(--card); min-width: 180px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); z-index: 1001; border-radius: 12px; border: 1px solid #334155; margin-top: 8px; overflow: hidden; }
+        .dropdown-content button { color: white; padding: 12px 16px; width: 100%; border: none; background: none; text-align: left; cursor: pointer; }
+        .user-menu:hover .dropdown-content { display: block; animation: fadeIn 0.2s; }
+
+        /* Tabs & Tables */
+        .tabs { display: flex; gap: 10px; border-bottom: 1px solid #334155; margin-bottom: 25px; }
+        .tab-btn { background: none; border: none; color: var(--muted); padding: 15px 25px; cursor: pointer; font-weight: bold; border-bottom: 3px solid transparent; }
+        .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+        .table-container { background: var(--card); border-radius: 16px; border: 1px solid #334155; overflow-x: auto; margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; min-width: 700px; }
+        th, td { padding: 16px; text-align: left; border-bottom: 1px solid #334155; }
+        th { background: rgba(15, 23, 42, 0.5); font-size: 0.75rem; color: var(--muted); text-transform: uppercase; }
+        
+        .role-pill { padding: 4px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: bold; border: 1px solid; }
+        .role-Administrator { color: var(--warning); border-color: var(--warning); }
+        .role-Admin { color: var(--muted); border-color: var(--muted); }
+        .btn-icon { width: 34px; height: 34px; border-radius: 8px; border: none; cursor: pointer; color: white; transition: 0.2s; }
+        
+        .hidden { display: none !important; }
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 2000; backdrop-filter: blur(4px); }
+        .modal-content { background: var(--card); padding: 30px; border-radius: 20px; width: 90%; max-width: 450px; border: 1px solid #475569; }
+        input, select, textarea { width: 100%; padding: 12px; background: #0f172a; border: 1px solid #334155; color: white; border-radius: 10px; margin-top: 10px; box-sizing: border-box; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>DCS <span style="color:var(--accent)">Admin</span></h1>
+        
+        <div class="controls-group">
+            <button class="btn-refresh" onclick="refreshDashboard()" title="Segarkan Data">
+                <i class="fa-solid fa-arrows-rotate"></i>
+            </button>
+
+            <div class="recru-status-box">
+                <span id="recru-label">LOADING...</span>
+                <label class="switch">
+                    <input type="checkbox" id="recru-toggle" onchange="toggleRecruitment(this.checked)">
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <div class="user-menu">
+                <button class="user-btn">
+                    <i class="fa-solid fa-circle-user"></i> 
+                    <span id="display-username">Admin</span>
+                    <i class="fa-solid fa-chevron-down" style="font-size:0.7rem"></i>
+                </button>
+                <div class="dropdown-content">
+                    <button onclick="openModal('modalChangePwd')"><i class="fa-solid fa-key"></i> Ubah Password</button>
+                    <button onclick="confirmLogout()" style="color:var(--danger)"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('pelamar', this)">Daftar Pelamar</button>
+        <button class="tab-btn" onclick="switchTab('soal', this)">Bank Soal</button>
+        <button id="tab-btn-admin" class="tab-btn hidden" onclick="switchTab('admin', this)">Manajemen Admin</button>
+    </div>
+
+    <div id="tab-pelamar" class="animate__animated animate__fadeIn">
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr><th>Nama / Email</th><th>Posisi</th><th>Skor</th><th>Status</th><th>Aksi</th></tr>
+                </thead>
+                <tbody id="bodyPelamar"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="tab-soal" class="hidden animate__animated animate__fadeIn">
+        <button onclick="openAddSoal()" style="background:var(--success); color:white; border:none; padding:12px 20px; border-radius:10px; margin-bottom:15px; cursor:pointer; font-weight:bold;">+ Tambah Soal</button>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr><th>Pertanyaan</th><th>Kunci</th><th>Aksi</th></tr>
+                </thead>
+                <tbody id="bodySoal"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="tab-admin" class="hidden animate__animated animate__fadeIn">
+        <div style="display: flex; justify-content: flex-end; margin-bottom: 15px;">
+            <button id="btn-tambah-admin" onclick="openModal('modalAddAdmin')" class="hidden" style="background:var(--accent); color:white; border:none; padding:12px 20px; border-radius:10px; cursor:pointer; font-weight:bold;">
+                <i class="fa-solid fa-user-plus"></i> Tambah Admin Baru
+            </button>
+        </div>
+        <h3 style="color: var(--warning); font-size: 0.9rem; margin-bottom: 10px;"><i class="fa-solid fa-shield-halved"></i> Administrator Utama</h3>
+        <div class="table-container"><table id="tableUtama"><thead><tr><th>Username</th><th>Role</th><th>Terdaftar</th><th>Aksi</th></tr></thead><tbody id="bodyAdminUtama"></tbody></table></div>
+        
+        <h3 style="color: var(--muted); font-size: 0.9rem; margin-bottom: 10px; margin-top: 20px;"><i class="fa-solid fa-users-gear"></i> Admin Staff</h3>
+        <div class="table-container"><table id="tableStaff"><thead><tr><th>Username</th><th>Role</th><th>Terdaftar</th><th>Aksi</th></tr></thead><tbody id="bodyAdminStaff"></tbody></table></div>
+    </div>
+</div>
+
+<div id="modalAddAdmin" class="modal hidden">
+    <div class="modal-content animate__animated animate__zoomIn animate__faster">
+        <h3>Tambah Admin</h3>
+        <input type="text" id="add_adm_username" placeholder="Username">
+        <input type="password" id="add_adm_password" placeholder="Password">
+        <select id="add_adm_role"><option value="Admin">Admin Staff</option><option value="Administrator">Administrator Utama</option></select>
+        <button onclick="saveNewAdmin()" style="background:var(--success); color:white; border:none; padding:14px; border-radius:10px; margin-top:20px; width:100%; cursor:pointer; font-weight:bold;">Simpan</button>
+        <button onclick="closeModal('modalAddAdmin')" style="background:none; border:none; color:var(--muted); width:100%; margin-top:10px; cursor:pointer;">Batal</button>
+    </div>
+</div>
+<div id="modalChangePwd" class="modal hidden">
+    <div class="modal-content animate__animated animate__zoomIn animate__faster">
+        <h3>Ubah Password</h3>
+        <input type="password" id="old_pwd" placeholder="Password Lama">
+        <input type="password" id="new_pwd" placeholder="Password Baru">
+        <button onclick="saveMyPassword()" style="background:var(--success); color:white; border:none; padding:14px; border-radius:10px; margin-top:20px; width:100%; cursor:pointer; font-weight:bold;">Simpan</button>
+        <button onclick="closeModal('modalChangePwd')" style="background:none; border:none; color:var(--muted); width:100%; margin-top:10px; cursor:pointer;">Batal</button>
+    </div>
+</div>
+<div id="modalSoal" class="modal hidden">
+    <div class="modal-content animate__animated animate__zoomIn animate__faster">
+        <h3 id="soalModalTitle">Tambah/Edit Soal</h3>
+        <input type="hidden" id="edit_s_id">
+        <input type="text" id="s_pertanyaan" placeholder="Pertanyaan" style="height: fit-content; max-width: 100%; min-height: 80px; resize: vertical;">
+        <input type="text" id="s_a" placeholder="Opsi A">
+        <input type="text" id="s_b" placeholder="Opsi B">
+        <input type="text" id="s_c" placeholder="Opsi C">
+        <input type="text" id="s_d" placeholder="Opsi D">
+        <select id="s_kunci"><option value="">Pilih Jawaban Benar</option><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option></select>
+        <button onclick="saveSoal()" style="background:var(--success); color:white; border:none; padding:14px; border-radius:10px; margin-top:20px; width:100%; cursor:pointer; font-weight:bold;">Simpan</button>
+        <button onclick="closeModal('modalSoal')" style="background:none; border:none; color:var(--muted); width:100%; margin-top:10px; cursor:pointer;">Batal</button>
+    </div>
+</div>
+
+<script>
+const SUPABASE_URL = "https://bzlewbetssmjrsmfbcmy.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ6bGV3YmV0c3NtanJzbWZiY215Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzNDA2MjgsImV4cCI6MjA5MTkxNjYyOH0.qO2AHNwe9Rlh1DImyJJZLzxXoHPSTRKmQZYwWqz1rjQ";
+const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let session = JSON.parse(sessionStorage.getItem('adminSession'));
+
+if(!session) {
+    window.location.href = '/e-recru/administrator/admin_login.html';
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+    loadRecruitmentStatus();
+    loadPelamar();
+
+    // Proteksi Password Default
+    if (session.password === 'admindcs123') {
+        Swal.fire({
+            title: 'Keamanan Akun',
+            text: 'Anda masih menggunakan password default. Harap segera ubah password Anda demi keamanan.',
+            icon: 'warning',
+            allowOutsideClick: false,
+            confirmButtonText: 'Ubah Sekarang'
+        }).then(() => {
+            openModal('modalChangePwd');
+            document.getElementById('old_pwd').value = 'admindcs123';
+        });
+    }
+});
+
+// Set Nama di UI & Proteksi Fitur Khusus Administrator Utama
+document.getElementById('display-username').innerText = session.username;
+
+if(session.role === 'Administrator') {
+    // Munculkan Tab Admin & Tombol Tambah Admin
+    const tabAdmin = document.getElementById('tab-btn-admin');
+    const btnAddAdmin = document.getElementById('btn-tambah-admin');
+    if(tabAdmin) tabAdmin.classList.remove('hidden');
+    if(btnAddAdmin) btnAddAdmin.classList.remove('hidden');
+}
+
+// Global Toast Notification
+const Toast = Swal.mixin({ 
+    toast: true, position: 'top-end', showConfirmButton: false, 
+    timer: 3000, background: '#1e293b', color: '#fff' 
+});
+
+// --- 3. UTILITY UI ---
+function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+async function refreshDashboard() {
+    const btn = document.querySelector('.btn-refresh i');
+    if(btn) btn.classList.add('fa-spin');
+    await Promise.all([loadRecruitmentStatus(), loadPelamar(), loadSoal(), loadAdminList()]);
+    if(btn) setTimeout(() => btn.classList.remove('fa-spin'), 500);
+    Toast.fire({ icon: 'success', title: 'Data diperbarui' });
+}
+
+function switchTab(target, btn) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    
+    document.getElementById('tab-pelamar').classList.toggle('hidden', target !== 'pelamar');
+    document.getElementById('tab-soal').classList.toggle('hidden', target !== 'soal');
+    document.getElementById('tab-admin').classList.toggle('hidden', target !== 'admin');
+    
+    if(target === 'pelamar') loadPelamar();
+    if(target === 'soal') loadSoal();
+    if(target === 'admin') loadAdminList();
+}
+
+async function loadPelamar() {
+    const { data } = await _supabase.from('applicants').select('*').order('created_at', { ascending: false });
+    const body = document.getElementById('bodyPelamar');
+    if(!body) return;
+
+    body.innerHTML = (data || []).map(p => {
+        const isProcessed = (p.status === 'Lolos' || p.status === 'Gagal');
+        const color = p.status === 'Lolos' ? 'var(--success)' : p.status === 'Gagal' ? 'var(--danger)' : 'var(--muted)';
+        
+        const canAction = session.role === 'Administrator' || session.role === 'Admin';
+
+        return `<tr>
+            <td><b>${p.nama}</b><br><small style="color:var(--muted)">${p.email}</small></td>
+            <td>${p.posisi}</td>
+            <td><b style="color:var(--accent)">${p.skor_ujian}</b></td>
+            <td style="color:${color}; font-weight:bold">${p.status}</td>
+            <td>
+                ${canAction ? `
+                    ${!isProcessed ? `
+                        <button class="btn-icon" style="background:var(--success)" onclick="upStatus('${p.id}','Lolos')"><i class="fa-solid fa-check"></i></button>
+                        <button class="btn-icon" style="background:var(--danger)" onclick="upStatus('${p.id}','Gagal')"><i class="fa-solid fa-xmark"></i></button>
+                    ` : `
+                        <button class="btn-icon" style="background:#475569" onclick="resetApplicant('${p.id}')"><i class="fa-solid fa-rotate-left"></i></button>
+                    `}
+                    <button class="btn-icon" style="background:#64748b" onclick="delApplicant('${p.id}')"><i class="fa-solid fa-trash"></i></button>
+                ` : `<small style="color:var(--muted)">Read Only</small>`}
+            </td>
+        </tr>`;
+    }).join('');
+}
+
+async function upStatus(id, s) {
+    if(session.role !== 'Administrator') return Swal.fire('Ditolak', 'Hanya Administrator Utama yang bisa merubah status!', 'error');
+    await _supabase.from('applicants').update({ status: s }).eq('id', id);
+    loadPelamar();
+}
+
+async function resetApplicant(id) {
+    if(session.role !== 'Administrator') return;
+    await _supabase.from('applicants').update({ status: 'Pending', skor_ujian: 0 }).eq('id', id);
+    loadPelamar();
+}
+
+async function delApplicant(id) { 
+    if(session.role !== 'Administrator') return;
+    const res = await Swal.fire({ title: 'Hapus Pelamar?', icon: 'warning', showCancelButton: true });
+    if(res.isConfirmed) { await _supabase.from('applicants').delete().eq('id', id); loadPelamar(); }
+}
+
+// --- 5. MANAJEMEN BANK SOAL ---
+async function loadSoal() {
+    const { data } = await _supabase.from('exams').select('*').order('created_at', { ascending: true });
+    const body = document.getElementById('bodySoal');
+    if(!body) return;
+
+    body.innerHTML = (data || []).map((s, i) => `<tr>
+        <td><b>${i+1}. ${s.pertanyaan}</b></td>
+        <td><b style="color:var(--accent)">${s.jawaban_benar}</b></td>
+        <td>
+            <button class="btn-icon" style="background:var(--accent)" onclick="openEditSoal('${s.id}')"><i class="fa-solid fa-pen"></i></button>
+            <button class="btn-icon" style="background:var(--danger)" onclick="delSoal('${s.id}')"><i class="fa-solid fa-trash"></i></button>
+        </td>
+    </tr>`).join('');
+}
+
+async function openAddSoal() {
+    document.getElementById('edit_s_id').value = "";
+    document.getElementById('s_pertanyaan').value = "";
+    document.getElementById('s_a').value = ""; document.getElementById('s_b').value = "";
+    document.getElementById('s_c').value = ""; document.getElementById('s_d').value = "";
+    openModal('modalSoal');
+}
+
+async function openEditSoal(id) {
+    const { data: s } = await _supabase.from('exams').select('*').eq('id', id).single();
+    document.getElementById('edit_s_id').value = s.id;
+    document.getElementById('s_pertanyaan').value = s.pertanyaan;
+    document.getElementById('s_a').value = s.opsi_a; document.getElementById('s_b').value = s.opsi_b;
+    document.getElementById('s_c').value = s.opsi_c; document.getElementById('s_d').value = s.opsi_d;
+    document.getElementById('s_kunci').value = s.jawaban_benar;
+    openModal('modalSoal');
+}
+
+async function saveSoal() {
+    const id = document.getElementById('edit_s_id').value;
+    const payload = { 
+        pertanyaan: document.getElementById('s_pertanyaan').value, 
+        opsi_a: document.getElementById('s_a').value, opsi_b: document.getElementById('s_b').value, 
+        opsi_c: document.getElementById('s_c').value, opsi_d: document.getElementById('s_d').value, 
+        jawaban_benar: document.getElementById('s_kunci').value 
+    };
+    id ? await _supabase.from('exams').update(payload).eq('id', id) : await _supabase.from('exams').insert([payload]);
+    closeModal('modalSoal'); loadSoal(); Toast.fire({ icon:'success', title: 'Soal disimpan' });
+}
+
+async function delSoal(id) { if(confirm('Hapus soal?')) { await _supabase.from('exams').delete().eq('id', id); loadSoal(); } }
+
+// --- 6. MANAJEMEN ADMINISTRATOR (PEMISAHAN LIST) ---
+async function loadAdminList() {
+    if(session.role !== 'Administrator') return;
+    const { data } = await _supabase.from('admin').select('*').order('username', { ascending: true });
+    const tUtama = document.getElementById('bodyAdminUtama');
+    const tStaff = document.getElementById('bodyAdminStaff');
+    if(!tUtama || !tStaff) return;
+
+    tUtama.innerHTML = ""; tStaff.innerHTML = "";
+
+    (data || []).forEach(a => {
+        const isSelf = a.username === session.username;
+        const canManage = (session.role === 'Administrator' && a.role === 'Admin'); // Hanya bisa manage Staff
+
+        const row = `<tr>
+            <td><b>${a.username}</b> ${isSelf ? '<br><small style="color:var(--accent)">Akun Saya</small>' : ''}</td>
+            <td><span class="role-pill role-${a.role}">${a.role}</span></td>
+            <td>${new Date(a.created_at).toLocaleDateString()}</td>
+            <td>
+                ${canManage ? `
+                    <button class="btn-icon" style="background:var(--warning)" onclick="resetToDefault('${a.id}', '${a.username}')"><i class="fa-solid fa-rotate"></i></button>
+                    <button class="btn-icon" style="background:var(--danger)" onclick="delAdmin('${a.id}')"><i class="fa-solid fa-trash"></i></button>
+                ` : (isSelf ? '<small>Menu Profil</small>' : '-')}
+            </td>
+        </tr>`;
+
+        if(a.role === 'Administrator') tUtama.innerHTML += row; 
+        else tStaff.innerHTML += row;
+    });
+}
+
+async function saveNewAdmin() {
+    if(session.role !== 'Administrator') return;
+    const user = document.getElementById('add_adm_username').value.trim();
+    const pass = document.getElementById('add_adm_password').value;
+    const role = document.getElementById('add_adm_role').value;
+    if(!user || !pass) return;
+
+    const { error } = await _supabase.from('admin').insert([{ username: user, password: pass, role: role }]);
+    if(!error) { closeModal('modalAddAdmin'); loadAdminList(); Swal.fire('Berhasil', 'Admin baru ditambahkan.', 'success'); }
+}
+
+async function resetToDefault(id, usn) {
+    const res = await Swal.fire({ title: 'Reset Password?', text: `Password ${usn} akan menjadi: admindcs123`, icon: 'warning', showCancelButton: true });
+    if(res.isConfirmed) {
+        await _supabase.from('admin').update({ password: 'admindcs123' }).eq('id', id);
+        Swal.fire('Berhasil', 'Password direset.', 'success');
+    }
+}
+
+async function delAdmin(id) {
+    if(confirm('Hapus akun ini?')) { await _supabase.from('admin').delete().eq('id', id); loadAdminList(); }
+}
+
+// --- 7. STATUS REKRUTMEN (OPEN/CLOSE) ---
+async function loadRecruitmentStatus() {
+    const { data } = await _supabase.from('status').select('sts').eq('id', 1).single();
+    if (data) {
+        document.getElementById('recru-toggle').checked = data.sts;
+        const label = document.getElementById('recru-label');
+        label.innerText = data.sts ? "REKRUTMEN: BUKA" : "REKRUTMEN: TUTUP";
+        label.style.color = data.sts ? "var(--success)" : "var(--danger)";
+    }
+}
+
+async function toggleRecruitment(isOpen) {
+    if(session.role !== 'Administrator') {
+        Swal.fire('Akses Ditolak', 'Hanya Administrator Utama yang bisa merubah status rekrutmen.', 'error');
+        document.getElementById('recru-toggle').checked = !isOpen;
+        return;
+    }
+    await _supabase.from('status').update({ sts: isOpen }).eq('id', 1);
+    refreshDashboard();
+}
+
+// --- 8. AKUN & LOGOUT ---
+async function saveMyPassword() {
+    const oldP = document.getElementById('old_pwd').value;
+    const newP = document.getElementById('new_pwd').value;
+    
+    const { data } = await _supabase.from('admin').select('*').eq('username', session.username).eq('password', oldP).single();
+    if(!data) return Swal.fire('Error', 'Password lama salah', 'error');
+    if(newP === 'admindcs123') return Swal.fire('Peringatan', 'Jangan gunakan password default!', 'warning');
+
+    const { error } = await _supabase.from('admin').update({ password: newP }).eq('username', session.username);
+    if(!error) {
+        session.password = newP;
+        sessionStorage.setItem('adminSession', JSON.stringify(session));
+        closeModal('modalChangePwd');
+        Swal.fire('Sukses', 'Password diperbarui', 'success');
+    }
+}
+
+function confirmLogout() {
+    sessionStorage.clear(); 
+    window.location.href = '/e-recru/administrator/admin_login.html';
+}
+</script>
+</body>
+</html>

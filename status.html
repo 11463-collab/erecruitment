@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Status Peserta - DCS</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root { --bg: #0f172a; --card: #1e293b; --accent: #ffca28; --text: #f8fafc; --muted: #94a3b8; }
+        body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; margin: 0; padding: 20px; }
+        
+        .nav-back { max-width: 600px; margin: 0 auto 20px; display: block; text-decoration: none; color: var(--accent); font-weight: bold; transition: 0.3s; }
+        .nav-back:hover { opacity: 0.7; }
+        
+        .container { max-width: 600px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+        .card { background: var(--card); border-radius: 20px; border: 1px solid #334155; padding: 25px; }
+
+        .status-header { text-align: center; margin-bottom: 20px; }
+        .status-badge { display: inline-block; padding: 10px 30px; border-radius: 50px; font-weight: 800; font-size: 1.2rem; margin-top: 10px; }
+        
+        /* Warna Dinamis */
+        .status-pending { background: rgba(255, 202, 40, 0.1); color: var(--accent); border: 1px solid var(--accent); }
+        .status-lolos { background: rgba(34, 197, 94, 0.1); color: #22c55e; border: 1px solid #22c55e; }
+        .status-gagal { background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid #ef4444; }
+
+        .info-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #334155; }
+        .info-row:last-child { border: none; }
+        .info-label { color: var(--muted); font-size: 0.9rem; }
+        .info-value { font-weight: 600; text-align: right; }
+
+        .result-msg { text-align: center; margin-top: 20px; font-size: 0.95rem; line-height: 1.6; color: var(--muted); }
+
+        /* SOSIAL MEDIA / LINK SECTION */
+        .social-links { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
+        .social-btn { 
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+            padding: 12px; border-radius: 12px; text-decoration: none; font-weight: bold; transition: 0.3s;
+        }
+        .whatsapp { background: #25d366; color: white; }
+        .discord { background: #5865f2; color: white; }
+        .social-btn:hover { transform: translateY(-3px); filter: brightness(1.1); }
+    </style>
+</head>
+<body>
+
+<a href="dashboard.html" class="nav-back"><i class="fa-solid fa-arrow-left"></i> Kembali ke Beranda</a>
+
+<div class="container">
+    <div class="card status-header">
+        <span style="text-transform: uppercase; font-size: 0.8rem; letter-spacing: 2px; color: var(--muted);">Hasil Seleksi</span><br>
+        <div id="badge-status" class="status-badge status-pending">MEMUAT...</div>
+        
+        <div id="msg-result" class="result-msg">
+            Status Anda sedang dalam proses peninjauan oleh tim rekrutmen DCS.
+        </div>
+    </div>
+
+    <div id="coordination-section" class="card" style="display: none;">
+        <h3 style="margin-top: 0; color: #22c55e;"><i class="fa-solid fa-comments"></i> Kanal Koordinasi</h3>
+        <p style="font-size: 0.85rem; color: var(--muted); margin-bottom: 15px;">
+            Silakan bergabung ke grup resmi kami untuk instruksi tahap selanjutnya:
+        </p>
+        <div class="social-links">
+            <a href="" target="_blank" class="social-btn whatsapp">
+                <i class="fa-brands fa-whatsapp"></i> Gabung Grup WhatsApp
+            </a>
+            <a href="" target="_blank" class="social-btn discord">
+                <i class="fa-brands fa-discord"></i> Join Discord Server
+            </a>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3 style="margin-top: 0; color: var(--accent);">Data Akun</h3>
+        <div class="info-row"><span class="info-label">Nama Lengkap</span><span class="info-value" id="res-nama">-</span></div>
+        <div class="info-row"><span class="info-label">Email</span><span class="info-value" id="res-email">-</span></div>
+        <div class="info-row"><span class="info-label">Posisi Dilamar</span><span class="info-value" id="res-posisi">-</span></div>
+        <div class="info-row"><span class="info-label">Daerah Operasional</span><span class="info-value" id="res-daop">-</span></div>
+    </div>
+</div>
+
+<script>
+    function loadStatus() {
+        const user = JSON.parse(localStorage.getItem('dcs_current_user'));
+        if (!user) { window.location.href = 'index.html'; return; }
+
+        document.getElementById('res-nama').innerText = user.nama;
+        document.getElementById('res-email').innerText = user.email;
+        document.getElementById('res-posisi').innerText = user.posisi;
+        document.getElementById('res-daop').innerText = user.daop;
+        
+        const status = user.status.toLowerCase();
+        const badge = document.getElementById('badge-status');
+        const msg = document.getElementById('msg-result');
+        const coordSection = document.getElementById('coordination-section');
+
+        badge.innerText = user.status.toUpperCase();
+        badge.className = `status-badge status-${status}`;
+
+        if(status === 'lolos') {
+            msg.innerHTML = "<b>Selamat!</b> Anda dinyatakan lolos seleksi tahap ini. Harap bergabung ke grup koordinasi di bawah ini.";
+            coordSection.style.display = 'block'; // Tampilkan link grup
+        } else if(status === 'gagal') {
+            msg.innerHTML = "<b>Mohon Maaf,</b> saat ini Anda belum dapat melanjutkan ke tahap berikutnya. Tetap semangat!";
+            coordSection.style.display = 'none';
+        } else {
+            msg.innerHTML = "Data ujian Anda sudah masuk. Tim kami sedang melakukan verifikasi skor. Silakan cek secara berkala.";
+            coordSection.style.display = 'none';
+        }
+    }
+    loadStatus();
+</script>
+</body>
+</html>

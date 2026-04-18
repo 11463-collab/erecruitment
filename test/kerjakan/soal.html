@@ -3,277 +3,563 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ujian Kompetensi - DCS Recruitment</title>
+    <title>DCS Recruitment - Gerbang Karir Perkeretaapian Masa Depan</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     <style>
         :root { 
-            --bg: #0f172a; 
-            --card: #1e293b; 
+            --bg-dark: #030712;
+            --bg-panel: #0b1120;
+            --card-glass: rgba(30, 41, 59, 0.4); 
             --accent: #ffca28; 
-            --text: #f8fafc; 
-            --muted: #94a3b8;
-            --danger: #ef4444;
+            --accent-glow: rgba(255, 202, 40, 0.5);
+            --text-main: #f8fafc; 
+            --text-dim: #94a3b8;
+            --glass-border: rgba(255, 255, 255, 0.08);
         }
         
-        body { margin: 0; font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); overflow-x: hidden; }
-
-        /* LAYOUT */
-        .main-wrapper { display: grid; grid-template-columns: 1fr 300px; height: 100vh; }
-        
-        /* CONTENT AREA */
-        .exam-area { padding: 40px; overflow-y: auto; display: flex; flex-direction: column; align-items: center; }
-        .content-container { width: 100%; max-width: 700px; }
-
-        .header-ujian { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; padding-bottom: 15px; border-bottom: 1px solid #334155; }
-        
-        .q-box { background: var(--card); padding: 30px; border-radius: 20px; border: 1px solid #334155; box-shadow: 0 10px 25px rgba(0,0,0,0.2); animation: fadeIn 0.4s ease; }
-
-        .option-item { 
-            background: rgba(255,255,255,0.05); border: 1px solid #334155; padding: 15px; 
-            border-radius: 12px; margin-top: 12px; cursor: pointer; transition: 0.3s; display: flex; align-items: center; gap: 10px;
+        body { 
+            background: var(--bg-dark);
+            background-image: 
+                radial-gradient(circle at 10% 10%, rgba(59, 130, 246, 0.1) 0%, transparent 40%),
+                radial-gradient(circle at 90% 90%, rgba(37, 99, 235, 0.08) 0%, transparent 40%);
+            color: var(--text-main); 
+            font-family: 'Outfit', sans-serif; 
+            margin: 0; 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden;
         }
-        .option-item:hover { background: rgba(255,202,40,0.1); border-color: var(--accent); }
-        .option-item.selected { background: var(--accent); color: #000; border-color: var(--accent); font-weight: bold; }
 
-        .nav-controls { display: flex; justify-content: space-between; margin-top: 25px; gap: 15px; }
-        .btn-nav { background: #334155; color: white; border: none; padding: 12px 25px; border-radius: 10px; cursor: pointer; font-weight: bold; flex: 1; transition: 0.2s; }
-        .btn-nav:hover { background: #475569; }
-        .btn-finish { background: var(--accent); color: #000; }
-        .btn-finish:hover { background: #eab308; }
-
-        /* SIDEBAR */
-        .sidebar { background: var(--card); border-left: 1px solid #334155; padding: 25px; display: flex; flex-direction: column; }
-        .sidebar-title { font-size: 1rem; font-weight: bold; margin-bottom: 20px; color: var(--muted); }
-        .grid-no { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
-        .no-btn { 
-            aspect-ratio: 1; border: 1px solid #334155; background: #0f172a; color: white; 
-            border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; transition: 0.3s;
+        /* Main Split Container */
+        .split-container {
+            display: flex;
+            width: 100%;
+            max-width: 1100px;
+            height: auto;
+            min-height: 650px;
+            margin: 20px;
+            background: var(--bg-panel);
+            border-radius: 32px;
+            overflow: hidden;
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 40px 80px -15px rgba(0, 0, 0, 0.8);
         }
-        .no-btn.filled { background: #3b82f6; border-color: #3b82f6; }
-        .no-btn.current { border: 2px solid var(--accent); color: var(--accent); }
 
-        .violation-counter { margin-top: auto; background: rgba(239, 68, 68, 0.1); padding: 15px; border-radius: 12px; border: 1px solid var(--danger); }
+        /* --- SISI KIRI: INFO PANEL --- */
+        .info-panel {
+            flex: 1.2;
+            padding: 60px;
+            background: linear-gradient(135deg, rgba(17, 24, 39, 0.8) 0%, rgba(3, 7, 18, 0.9) 100%);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
 
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        @media (max-width: 850px) { .main-wrapper { grid-template-columns: 1fr; } .sidebar { display: none; } }
+        /* Railway Line Deco */
+        .info-panel::before {
+            content: "";
+            position: absolute;
+            bottom: 0; left: 0; width: 100%; height: 100%;
+            background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgdmlld0JveD0iMCAwIDQwIDQwIj48ZyBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiMzYjgyZjYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTAgMGg0MHY0MEgwVjB6bTIwIDIwaDIwdjIwSDIWMjB6TTAgMjBoMjB2MjBIMFYyMHoyMCAwaDIwdjIwSDIwVjB6Ii8+PC9nPjwvZz48L3N2Zz4=');
+            opacity: 0.3;
+            z-index: 0;
+        }
+
+        .info-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .badge-open {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(75, 246, 59, 0.15);
+            color: #22c55e;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-bottom: 20px;
+            border: 1px solid rgba(75, 246, 59, 0.3);
+        }
+
+        .badge-closed {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(239, 68, 68, 0.15);
+            color: #ef4444;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-bottom: 20px;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .info-panel h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            line-height: 1.1;
+            margin: 0 0 20px;
+            background: linear-gradient(to right, #f8fafc, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .info-panel p.main-desc {
+            color: var(--text-dim);
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin-bottom: 40px;
+            max-width: 480px;
+        }
+
+        /* Feature List (Hal Bagus) */
+        .feature-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+        }
+
+        .feature-icon {
+            width: 44px; height: 44px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: var(--accent);
+            font-size: 1.2rem;
+            flex-shrink: 0;
+            transition: 0.3s;
+        }
+
+        .feature-item:hover .feature-icon {
+            background: var(--accent);
+            color: white;
+            transform: scale(1.1);
+            box-shadow: 0 0 15px var(--accent-glow);
+        }
+
+        .feature-text h3 {
+            margin: 0 0 5px;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .feature-text p {
+            margin: 0;
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            line-height: 1.4;
+        }
+
+        /* --- SISI KANAN: FORM PANEL (Glassmorphism) --- */
+        .form-panel {
+            flex: 1;
+            padding: 60px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: rgba(15, 23, 42, 0.2);
+            border-left: 1px solid var(--glass-border);
+        }
+
+        .box { 
+            width: 100%;
+            max-width: 360px;
+            text-align: center; 
+        }
+
+        .logo-area {
+            margin-bottom: 20px;
+        }
+        .logo-area img {
+            width: 100px;
+            height: 100px;
+            object-fit: contain;
+        }
+
+        .logo-icon {
+            font-size: 3rem;
+            color: var(--accent);
+            filter: drop-shadow(0 0 10px var(--accent-glow));
+        }
+
+        h2 { 
+            margin: 0 0 10px; 
+            font-size: 1.8rem; 
+            font-weight: 700; 
+        }
+
+        p.subtitle { 
+            color: var(--text-dim); 
+            font-size: 0.9rem; 
+            margin-bottom: 30px; 
+            line-height: 1.5;
+        }
+
+        /* Input Styling */
+        .input-group {
+            position: relative;
+            margin-bottom: 14px;
+            text-align: left;
+        }
+
+        .input-group i {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-dim);
+            transition: 0.3s;
+            font-size: 0.9rem;
+        }
+
+        input, select { 
+            width: 100%; 
+            padding: 12px 14px 12px 40px; 
+            border-radius: 12px; 
+            border: 1px solid var(--glass-border); 
+            background: rgba(15, 23, 42, 0.6); 
+            color: white; 
+            box-sizing: border-box; 
+            font-size: 0.95rem;
+            transition: all 0.3s;
+            font-family: inherit;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--accent);
+            background: rgba(15, 23, 42, 0.9);
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.1);
+        }
+
+        input:focus + i, .input-group:focus-within i {
+            color: var(--accent);
+        }
+
+        select { appearance: none; cursor: pointer; }
+
+        /* Button Styling */
+        button { 
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: white;
+            font-weight: 600;
+            font-size: 0.95rem;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            transition: 0.3s;
+        }
+
+        button:hover { 
+            transform: translateY(-2px); 
+            box-shadow: 0 10px 20px -5px rgba(37, 99, 235, 0.4);
+        }
+
+        button:disabled { 
+            background: #475569; 
+            opacity: 0.6;
+            cursor: not-allowed; 
+            transform: none; 
+        }
+
+        .admin-link { 
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 30px; 
+            color: var(--text-dim); 
+            font-size: 0.8rem; 
+            text-decoration: none; 
+            transition: 0.3s;
+        }
+
+        .admin-link:hover { color: var(--text-main); }
+
+        .reg-label {
+            display: block;
+            font-size: 0.75rem;
+            color: var(--accent);
+            margin-bottom: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-align: left;
+        }
+
+        /* Responsive Breakpoint */
+        @media (max-width: 900px) {
+            .split-container {
+                flex-direction: column;
+                height: auto;
+                border-radius: 20px;
+            }
+            .info-panel {
+                padding: 40px;
+                text-align: center;
+            }
+            .info-panel h1 { font-size: 2.2rem; }
+            .info-panel p.main-desc { margin-left: auto; margin-right: auto; }
+            .feature-list {
+                grid-template-columns: 1fr;
+                text-align: left;
+                max-width: 400px;
+                margin: 0 auto;
+            }
+            .form-panel {
+                padding: 40px;
+                border-left: none;
+                border-top: 1px solid var(--glass-border);
+            }
+        }
     </style>
 </head>
 <body>
 
-<div class="main-wrapper">
-    <div class="exam-area">
-        <div class="content-container">
-            <div class="header-ujian">
-                <div>
-                    <h3 style="margin:0" id="userName">...</h3>
-                    <small style="color:var(--muted)" id="displayPosisi">Posisi: -</small>
+    <div class="container animate__animated animate__fadeIn">
+        <div class="split-container">
+            
+            <div class="info-panel">
+                <div class="info-content">
+                    <div class="badge-open" id="infobadge">
+                        <i class="fa-solid fa-star"></i>
+                        <span>Open</span>
+                    </div>
+                    
+                    <h1>Welcome to <br>DCS Recruitment</h1>
+                    <p class="main-desc">
+                        Halaman Recruitment resmi dari Double Coupler Studio <br>
+                        Jadilah bagian dari kami sekarang.
+                    </p>
+                    <ul class="feature-list">
+                        <li class="feature-item">
+                            <div class="feature-icon"><i class="fa-solid fa-user-tie"></i></div>
+                            <div class="feature-text">
+                                <h3>developer dan staff</h3>
+                                <p>developers dan staff yang profesional dan berpengalaman</p>
+                            </div>
+                        </li>
+                        <li class="feature-item">
+                            <div class="feature-icon"><i class="fa-solid fa-chart-line"></i></div>
+                            <div class="feature-text">
+                                <h3>Perkembangan Karir</h3>
+                                <p>Jalur karir yang jelas dan kesempatan pengembangan diri</p>
+                            </div>
+                        </li>
+                        <li class="feature-item">
+                            <div class="feature-icon"><i class="fa-solid fa-handshake"></i></div>
+                            <div class="feature-text">
+                                <h3>Kolaborasi</h3>
+                                <p>Berkolaborasi dengam studio kereta api lainnya di-roblox</p>
+                            </div>
+                        </li>
+                        <li class="feature-item">
+                            <div class="feature-icon"><i class="fa-solid fa-shield"></i></div>
+                            <div class="feature-text">
+                                <h3>Keamanan Data</h3>
+                                <p>Kami menjaga kerahasiaan data pribadi Anda dengan standar keamanan tinggi</p>
+                            </div>
+                        </li>
+                    </ul>
                 </div>
-                <div id="timer" style="color: var(--danger); font-weight: 800; font-size: 1.2rem;">00:00</div>
             </div>
 
-            <div id="questionContainer">
-                </div>
+            <div class="form-panel">
+                <div class="box">
+                    <div class="logo-area">
+                        <div class="logo-icon"><img src="https://doublecouplerstudio.benevolentclass.my.id/logo/l1.png" alt="Logo"></div>
+                    </div>
+                    
+                    <h2>Daftar atau Masuk</h2>
+                    <p class="subtitle">Gunakan email Anda untuk masuk atau mendaftar baru.</p>
+                    
+                    <form id="mainForm">
+                        <div class="input-group">
+                            <i class="fa-solid fa-envelope"></i>
+                            <input type="email" id="email" placeholder="Alamat Email Aktif" required>
+                        </div>
+                        
+                        <div id="regFields" style="display:none; margin-top: 20px;" class="animate__animated animate__fadeInSmall">
+                            <span class="reg-label">Lengkapi Profil Anda</span>
+                            
+                            <div class="input-group">
+                                <i class="fa-solid fa-user"></i>
+                                <input type="text" id="nama" placeholder="Nama Lengkap" required>
+                            </div>
 
-            <div class="nav-controls">
-                <button class="btn-nav" onclick="changeQuestion(currentIdx - 1)" id="btnPrev">Sebelumnya</button>
-                <button class="btn-nav" onclick="changeQuestion(currentIdx + 1)" id="btnNext">Selanjutnya</button>
-                <button class="btn-nav btn-finish" id="btnSubmit" style="display:none" onclick="finishExam()">Kirim Hasil</button>
+                            <div class="input-group">
+                                <i class="fa-solid fa-whatsapp"></i>
+                                <input type="tel" id="phone" placeholder="Nomor WhatsApp">
+                            </div>
+                            
+                            <div class="input-group">
+                                <i class="fa-solid fa-briefcase"></i>
+                                <select id="posisi" required>
+                                    <option value="" disabled selected>Pilih Posisi</option>
+                                    <option value="Developer">Developer</option>
+                                    <option value="Scripter">Scripter & ICT</option>
+                                    <option value="Desainer">Desainer</option>
+                                    <option value="Staff">Staff</option>
+                                </select>
+                            </div>
+
+                            <div class="input-group">
+                                <i class="fa-solid fa-location-dot"></i>
+                                <select id="daop" required>
+                                    <option value="" disabled selected>Daop / Divre</option>
+                                    <optgroup label="Daerah Operasi (Jawa)">
+                                        <option value="Daop 1 Jakarta">Daop 1 Jakarta</option>
+                                        <option value="Daop 2 Bandung">Daop 2 Bandung</option>
+                                        <option value="Daop 3 Cirebon">Daop 3 Cirebon</option>
+                                        <option value="Daop 4 Semarang">Daop 4 Semarang</option>
+                                        <option value="Daop 5 Purwokerto">Daop 5 Purwokerto</option>
+                                        <option value="Daop 6 Yogyakarta">Daop 6 Yogyakarta</option>
+                                        <option value="Daop 7 Madiun">Daop 7 Madiun</option>
+                                        <option value="Daop 8 Surabaya">Daop 8 Surabaya</option>
+                                        <option value="Daop 9 Jember">Daop 9 Jember</option>
+                                    </optgroup>
+                                    <optgroup label="Divisi Regional (Sumatera)">
+                                        <option value="Divre I Sumatera Utara">Divre I Sumatera Utara</option>
+                                        <option value="Divre II Sumatera Selatan">Divre II Sumatera Selatan</option>
+                                        <option value="Divre III Palembang">Divre III Palembang</option>
+                                    </optgroup>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <button type="submit" id="btnAction">
+                            <span>Lanjutkan</span>
+                            <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </form>
+
+                    <a href="/e-recru/administrator/admin_login.html" class="admin-link">
+                        <i class="fa-solid fa-user-lock"></i> Portal Admin
+                    </a>
+                </div>
             </div>
+
         </div>
     </div>
 
-    <div class="sidebar">
-        <div class="sidebar-title">Navigasi Soal</div>
-        <div class="grid-no" id="numberGrid">
-            </div>
+    <script>
+        const SUPABASE_URL = "https://bzlewbetssmjrsmfbcmy.supabase.co";
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ6bGV3YmV0c3NtanJzbWZiY215Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzNDA2MjgsImV4cCI6MjA5MTkxNjYyOH0.qO2AHNwe9Rlh1DImyJJZLzxXoHPSTRKmQZYwWqz1rjQ";
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        <div class="violation-counter">
-            <small style="color: var(--danger); font-weight: bold; display: block; margin-bottom: 5px;">Peringatan Keamanan</small>
-            <div style="font-size: 0.8rem;">Pelanggaran: <span id="vCount" style="font-weight: 800;">0</span>/3</div>
-            <div style="width: 100%; height: 6px; background: #334155; border-radius: 10px; margin-top: 8px;">
-                <div id="vBar" style="width: 0%; height: 100%; background: var(--danger); border-radius: 10px; transition: 0.3s;"></div>
-            </div>
-        </div>
-    </div>
-</div>
+        let isNewUser = false;
 
-<script>
-    const SUPABASE_URL = "https://bzlewbetssmjrsmfbcmy.supabase.co";
-    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ6bGV3YmV0c3NtanJzbWZiY215Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzNDA2MjgsImV4cCI6MjA5MTkxNjYyOH0.qO2AHNwe9Rlh1DImyJJZLzxXoHPSTRKmQZYwWqz1rjQ";
-    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        document.getElementById('mainForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('btnAction');
+            const emailInput = document.getElementById('email').value.trim();
 
-    let questions = [];
-    let userAnswers = {}; // { questionId: 'A' }
-    let currentIdx = 0;
-    let violations = 0;
-    const userData = JSON.parse(localStorage.getItem('dcs_current_user'));
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Mengecek...</span>';
 
-    if (!userData) window.location.href = "/erecru/index.html";
+            try {
+                const { data, error } = await _supabase
+                    .from('applicants')
+                    .select('*')
+                    .eq('email', emailInput);
 
-    async function initExam() {
-        document.getElementById('userName').innerText = userData.nama;
-        document.getElementById('displayPosisi').innerText = `Posisi: ${userData.posisi}`;
+                if (error) throw error;
 
-        const { data, error } = await _supabase.from('exams').select('*');
-        if (error) return Swal.fire('Error', 'Gagal ambil soal', 'error');
-        
-        questions = data;
-        renderNumberGrid();
-        showQuestion(0);
-    }
+                if (data && data.length > 0) {
+                    localStorage.setItem('dcs_current_user', JSON.stringify(data[0]));
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Berhasil Masuk',
+                        text: 'Mengalihkan ke Dashboard...',
+                        timer: 1500,
+                        showConfirmButton: false,
+                        background: '#111827',
+                        color: '#fff'
+                    }).then(() => {
+                        window.location.href = 'dashboard.html';
+                    });
 
-    function renderNumberGrid() {
-        const grid = document.getElementById('numberGrid');
-        grid.innerHTML = '';
-        questions.forEach((_, i) => {
-            const isFilled = userAnswers[questions[i].id] ? 'filled' : '';
-            const isCurrent = i === currentIdx ? 'current' : '';
-            grid.innerHTML += `<button class="no-btn ${isFilled} ${isCurrent}" onclick="changeQuestion(${i})">${i + 1}</button>`;
-        });
-    }
+                } else if (!isNewUser) {
+                    isNewUser = true;
+                    document.getElementById('regFields').style.display = 'block';
+                    document.getElementById('email').readOnly = true;
+                    document.getElementById('email').parentElement.style.opacity = '0.5';
+                    
+                    btn.disabled = false;
+                    btn.innerHTML = '<span>Daftar Sekarang</span> <i class="fa-solid fa-paper-plane"></i>';
+                    
+                    Swal.fire({
+                        title: 'Email Belum Terdaftar',
+                        text: 'Silakan lengkapi biodata Anda untuk mendaftar.',
+                        icon: 'info',
+                        background: '#111827',
+                        color: '#fff',
+                        confirmButtonColor: '#3b82f6'
+                    });
+                } else {
+                    const payload = {
+                        email: emailInput,
+                        nama: document.getElementById('nama').value,
+                        phone: document.getElementById('phone').value,
+                        posisi: document.getElementById('posisi').value,
+                        daop: document.getElementById('daop').value,
+                        status: 'Pending',
+                        skor_ujian: 0
+                    };
 
-    function showQuestion(idx) {
-        currentIdx = idx;
-        const q = questions[idx];
-        const container = document.getElementById('questionContainer');
-        
-        container.innerHTML = `
-            <div class="q-box">
-                <p style="font-size: 1.1rem; line-height: 1.6; margin-bottom: 20px;"><b>Soal ${idx + 1}:</b><br>${q.pertanyaan}</p>
-                <div class="option-item ${userAnswers[q.id] === 'A' ? 'selected' : ''}" onclick="selectAnswer('${q.id}', 'A')"><b>A.</b> ${q.opsi_a}</div>
-                <div class="option-item ${userAnswers[q.id] === 'B' ? 'selected' : ''}" onclick="selectAnswer('${q.id}', 'B')"><b>B.</b> ${q.opsi_b}</div>
-                <div class="option-item ${userAnswers[q.id] === 'C' ? 'selected' : ''}" onclick="selectAnswer('${q.id}', 'C')"><b>C.</b> ${q.opsi_c}</div>
-                <div class="option-item ${userAnswers[q.id] === 'D' ? 'selected' : ''}" onclick="selectAnswer('${q.id}', 'D')"><b>D.</b> ${q.opsi_d}</div>
-            </div>
-        `;
+                    if(!payload.nama || !payload.posisi) {
+                        throw new Error("Mohon lengkapi Nama dan Posisi.");
+                    }
 
-        // Navigasi Button logic
-        document.getElementById('btnPrev').style.visibility = idx === 0 ? 'hidden' : 'visible';
-        document.getElementById('btnNext').style.display = idx === questions.length - 1 ? 'none' : 'block';
-        document.getElementById('btnSubmit').style.display = idx === questions.length - 1 ? 'block' : 'none';
-        
-        renderNumberGrid();
-    }
+                    const { data: insData, error: insError } = await _supabase
+                        .from('applicants')
+                        .insert([payload])
+                        .select();
 
-    function selectAnswer(qId, val) {
-        userAnswers[qId] = val;
-        showQuestion(currentIdx);
-    }
+                    if (insError) throw insError;
 
-    function changeQuestion(idx) {
-        if (idx >= 0 && idx < questions.length) showQuestion(idx);
-    }
+                    localStorage.setItem('dcs_current_user', JSON.stringify(insData[0]));
+                    window.location.href = 'dashboard.html';
+                }
 
-    // ANTI CHEAT LOGIC
-    window.addEventListener('blur', () => {
-        violations++;
-        updateViolationUI();
-
-        if (violations >= 3) {
-            diskualifikasiUser();
-        } else {
-            Swal.fire({
-                title: 'Pelanggaran Terdeteksi!',
-                text: `Jangan berpindah tab! Pelanggaran ${violations}/3. Jika mencapai 3, Anda akan didiskualifikasi secara otomatis.`,
-                icon: 'error',
-                confirmButtonColor: '#3b82f6'
-            });
-        }
-    });
-
-    function updateViolationUI() {
-        document.getElementById('vCount').innerText = violations;
-        document.getElementById('vBar').style.width = (violations / 3 * 100) + '%';
-    }
-
-    async function diskualifikasiUser() {
-        // Update skor jadi 0 dan status Gagal
-        await _supabase.from('applicants').update({ skor_ujian: 0, status: 'Gagal' }).eq('email', userData.email);
-        
-        Swal.fire({
-            title: 'DISKUALIFIKASI!',
-            text: 'Anda melanggar aturan ujian sebanyak 3 kali. Akses ujian ditutup.',
-            icon: 'error',
-            allowOutsideClick: false,
-            confirmButtonText: 'Kembali ke Dashboard'
-        }).then(() => {
-            window.location.href = "/e-recru/dashboard.html";
-        });
-    }
-
-    async function finishExam() {
-        // 1. Cek apakah ada soal yang belum dijawab
-        const totalSoal = questions.length;
-        const dijawab = Object.keys(userAnswers).length;
-
-        const confirm = await Swal.fire({
-            title: 'Kirim Jawaban?',
-            text: dijawab < totalSoal 
-                ? `Anda baru menjawab ${dijawab} dari ${totalSoal} soal. Yakin ingin mengirim?` 
-                : "Semua soal telah dijawab. Kirim sekarang?",
-            icon: dijawab < totalSoal ? 'warning' : 'question',
-            showCancelButton: true,
-            confirmButtonColor: '#ffca28',
-            cancelButtonColor: '#334155',
-            confirmButtonText: 'Ya, Kirim!',
-            cancelButtonText: 'Cek Lagi'
-        });
-
-        if (!confirm.isConfirmed) return;
-
-        // 2. Tampilkan Loading
-        Swal.fire({ 
-            title: 'Menyimpan Hasil...', 
-            text: 'Mohon tunggu sebentar, jangan tutup browser.',
-            allowOutsideClick: false,
-            didOpen: () => Swal.showLoading() 
-        });
-
-        // 3. Hitung Skor
-        let correctCount = 0;
-        questions.forEach(q => {
-            if (userAnswers[q.id] === q.jawaban_benar) {
-                correctCount++;
+            } catch (err) {
+                btn.disabled = false;
+                btn.innerHTML = '<span>Coba Lagi</span> <i class="fa-solid fa-rotate-right"></i>';
+                Swal.fire({ icon: 'error', title: 'Kesalahan', text: err.message, background: '#111827', color: '#fff' });
             }
-        });
-
-        const finalScore = Math.round((correctCount / totalSoal) * 100);
-
-        // 4. Update ke Database Supabase
-        const { error } = await _supabase
-            .from('applicants')
-            .update({ 
-                skor_ujian: finalScore,
-                // Kita juga set status ke 'Pending' lagi untuk memastikan 
-                // data ter-refresh di dashboard
-                status: userData.status 
-            })
-            .eq('email', userData.email);
-
-        if (!error) {
-            // 5. Update Local Storage agar Dashboard langsung berubah warnanya
-            userData.skor_ujian = finalScore;
-            localStorage.setItem('dcs_current_user', JSON.stringify(userData));
-
-            // 6. Redirect ke halaman Success
-            Swal.fire({
-                title: 'Berhasil!',
-                text: 'Jawaban Anda telah tersimpan di sistem kami.',
-                icon: 'success',
-                timer: 2000,
-                showConfirmButton: false
-            }).then(() => {
-                window.location.href = "success.html";
-            });
-        } else {
-            console.error(error);
-            Swal.fire('Gagal!', 'Terjadi kesalahan saat mengirim: ' + error.message, 'error');
-        }
-    }
-
-    initExam();
-</script>
+        };
+    </script>
 </body>
 </html>

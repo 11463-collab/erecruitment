@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DCS Recruitment - Gerbang Karir Perkeretaapian Masa Depan</title>
+    <title>Recruitment - Double Coupler Studio</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -22,6 +22,7 @@
             --text-main: #f8fafc; 
             --text-dim: #94a3b8;
             --glass-border: rgba(255, 255, 255, 0.08);
+            --danger: #ef4444; /* Tambahan untuk status closed */
         }
         
         body { 
@@ -39,7 +40,6 @@
             overflow-x: hidden;
         }
 
-        /* Main Split Container */
         .split-container {
             display: flex;
             width: 100%;
@@ -54,7 +54,6 @@
             box-shadow: 0 40px 80px -15px rgba(0, 0, 0, 0.8);
         }
 
-        /* --- SISI KIRI: INFO PANEL --- */
         .info-panel {
             flex: 1.2;
             padding: 60px;
@@ -65,7 +64,6 @@
             justify-content: center;
         }
 
-        /* Railway Line Deco */
         .info-panel::before {
             content: "";
             position: absolute;
@@ -126,7 +124,6 @@
             max-width: 480px;
         }
 
-        /* Feature List (Hal Bagus) */
         .feature-list {
             list-style: none;
             padding: 0;
@@ -176,7 +173,6 @@
             line-height: 1.4;
         }
 
-        /* --- SISI KANAN: FORM PANEL (Glassmorphism) --- */
         .form-panel {
             flex: 1;
             padding: 60px;
@@ -202,12 +198,6 @@
             object-fit: contain;
         }
 
-        .logo-icon {
-            font-size: 3rem;
-            color: var(--accent);
-            filter: drop-shadow(0 0 10px var(--accent-glow));
-        }
-
         h2 { 
             margin: 0 0 10px; 
             font-size: 1.8rem; 
@@ -221,7 +211,27 @@
             line-height: 1.5;
         }
 
-        /* Input Styling */
+        /* Recruitment Closed Alert Box */
+        .closed-alert {
+            border: 2px solid var(--danger);
+            background: rgba(239, 68, 68, 0.1);
+            padding: 20px;
+            border-radius: 16px;
+            color: var(--danger);
+            text-align: center;
+            margin-top: 20px;
+        }
+        .closed-alert i { font-size: 2rem; margin-bottom: 10px; display: block; }
+
+        /* Google Button Style */
+        .btn-google {
+            background: white !important;
+            color: #3c4043 !important;
+            border: 1px solid #dadce0 !important;
+            box-shadow: none !important;
+        }
+        .btn-google img { width: 18px; margin-right: 10px; }
+
         .input-group {
             position: relative;
             margin-bottom: 14px;
@@ -255,16 +265,8 @@
             outline: none;
             border-color: var(--accent);
             background: rgba(15, 23, 42, 0.9);
-            box-shadow: 0 0 15px rgba(59, 130, 246, 0.1);
         }
 
-        input:focus + i, .input-group:focus-within i {
-            color: var(--accent);
-        }
-
-        select { appearance: none; cursor: pointer; }
-
-        /* Button Styling */
         button { 
             width: 100%;
             padding: 14px;
@@ -283,17 +285,7 @@
             transition: 0.3s;
         }
 
-        button:hover { 
-            transform: translateY(-2px); 
-            box-shadow: 0 10px 20px -5px rgba(37, 99, 235, 0.4);
-        }
-
-        button:disabled { 
-            background: #475569; 
-            opacity: 0.6;
-            cursor: not-allowed; 
-            transform: none; 
-        }
+        button:hover { transform: translateY(-2px); }
 
         .admin-link { 
             display: inline-flex;
@@ -303,46 +295,13 @@
             color: var(--text-dim); 
             font-size: 0.8rem; 
             text-decoration: none; 
-            transition: 0.3s;
         }
 
-        .admin-link:hover { color: var(--text-main); }
-
-        .reg-label {
-            display: block;
-            font-size: 0.75rem;
-            color: var(--accent);
-            margin-bottom: 10px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            text-align: left;
-        }
-
-        /* Responsive Breakpoint */
         @media (max-width: 900px) {
-            .split-container {
-                flex-direction: column;
-                height: auto;
-                border-radius: 20px;
-            }
-            .info-panel {
-                padding: 40px;
-                text-align: center;
-            }
-            .info-panel h1 { font-size: 2.2rem; }
-            .info-panel p.main-desc { margin-left: auto; margin-right: auto; }
-            .feature-list {
-                grid-template-columns: 1fr;
-                text-align: left;
-                max-width: 400px;
-                margin: 0 auto;
-            }
-            .form-panel {
-                padding: 40px;
-                border-left: none;
-                border-top: 1px solid var(--glass-border);
-            }
+            .split-container { flex-direction: column; height: auto; }
+            .info-panel { padding: 40px; text-align: center; }
+            .feature-list { grid-template-columns: 1fr; }
+            .form-panel { padding: 40px; border-left: none; border-top: 1px solid var(--glass-border); }
         }
     </style>
 </head>
@@ -353,10 +312,8 @@
             
             <div class="info-panel">
                 <div class="info-content">
-                    <div class="badge-open" id="infobadge">
-                        <i class="fa-solid fa-star"></i>
-                        <span>Open</span>
-                    </div>
+                    <div id="infobadge">
+                        </div>
                     
                     <h1>Welcome to <br>DCS Recruitment</h1>
                     <p class="main-desc">
@@ -399,34 +356,44 @@
             <div class="form-panel">
                 <div class="box">
                     <div class="logo-area">
-                        <div class="logo-icon"><img src="https://doublecouplerstudio.benevolentclass.my.id/logo/l1.png" alt="Logo"></div>
+                        <img src="https://doublecouplerstudio.benevolentclass.my.id/logo/l1.png" alt="Logo">
                     </div>
                     
-                    <h2>Daftar atau Masuk</h2>
-                    <p class="subtitle">Gunakan email Anda untuk masuk atau mendaftar baru.</p>
-                    
-                    <form id="mainForm">
-                        <div class="input-group">
-                            <i class="fa-solid fa-envelope"></i>
-                            <input type="email" id="email" placeholder="Alamat Email Aktif" required>
-                        </div>
+                    <div id="authContent">
+                        <h2>Daftar atau Masuk</h2>
+                        <p class="subtitle">Silakan masuk menggunakan akun Google Anda.</p>
                         
-                        <div id="regFields" style="display:none; margin-top: 20px;" class="animate__animated animate__fadeInSmall">
-                            <span class="reg-label">Lengkapi Profil Anda</span>
-                            
+                        <div id="open-recruitment">
+                            <button class="btn-google" onclick="loginGoogle()">
+                                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg">
+                                Sign in with Google
+                            </button>
+                        </div>
+
+                        <div id="closed-recruitment" style="display: none;">
+                            <div class="closed-alert animate__animated animate__shakeX">
+                                <i class="fa-solid fa-circle-xmark"></i>
+                                <b>Pendaftaran Ditutup</b><br>
+                                <small>Recruitment saat ini sedang tidak tersedia.</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="regFields" style="display:none;" class="animate__animated animate__fadeIn">
+                        <h2>Lengkapi Profil</h2>
+                        <p class="subtitle">Lengkapi biodata Anda untuk mendaftar.</p>
+                        <form id="profileForm">
+                            <div class="input-group">
+                                <i class="fa-solid fa-envelope"></i>
+                                <input type="email" id="displayEmail" readonly style="opacity: 0.6;">
+                            </div>
                             <div class="input-group">
                                 <i class="fa-solid fa-user"></i>
-                                <input type="text" id="nama" placeholder="Nama Lengkap Sesuai KTP">
+                                <input type="text" id="nama" placeholder="Nama Lengkap" required>
                             </div>
-
-                            <div class="input-group">
-                                <i class="fa-solid fa-whatsapp"></i>
-                                <input type="tel" id="phone" placeholder="Nomor WhatsApp">
-                            </div>
-                            
                             <div class="input-group">
                                 <i class="fa-solid fa-briefcase"></i>
-                                <select id="posisi">
+                                <select id="posisi" required>
                                     <option value="" disabled selected>Pilih Posisi</option>
                                     <option value="Developer">Developer</option>
                                     <option value="Scripter">Scripter & ICT</option>
@@ -434,12 +401,11 @@
                                     <option value="Staff">Staff</option>
                                 </select>
                             </div>
-
                             <div class="input-group">
                                 <i class="fa-solid fa-location-dot"></i>
-                                <select id="daop">
+                                <select id="daop" required>
                                     <option value="" disabled selected>Daop / Divre</option>
-                                    <optgroup label="Daerah Operasi (Jawa)">
+                                    <optgroup label="Daerah Operasi">
                                         <option value="Daop 1 Jakarta">Daop 1 Jakarta</option>
                                         <option value="Daop 2 Bandung">Daop 2 Bandung</option>
                                         <option value="Daop 3 Cirebon">Daop 3 Cirebon</option>
@@ -450,22 +416,19 @@
                                         <option value="Daop 8 Surabaya">Daop 8 Surabaya</option>
                                         <option value="Daop 9 Jember">Daop 9 Jember</option>
                                     </optgroup>
-                                    <optgroup label="Divisi Regional (Sumatera)">
+                                    <optgroup label="Divisi Regional">
                                         <option value="Divre I Sumatera Utara">Divre I Sumatera Utara</option>
                                         <option value="Divre II Sumatera Selatan">Divre II Sumatera Selatan</option>
                                         <option value="Divre III Palembang">Divre III Palembang</option>
+                                        <option value="Divre IV Tanjungkarang">Divre IV Tanjungkarang</option>
                                     </optgroup>
                                 </select>
                             </div>
-                        </div>
-                        
-                        <button type="submit" id="btnAction">
-                            <span>Lanjutkan</span>
-                            <i class="fa-solid fa-arrow-right"></i>
-                        </button>
-                    </form>
+                            <button type="submit">Selesaikan Pendaftaran</button>
+                        </form>
+                    </div>
 
-                    <a href="" class="admin-link">
+                    <a href="/e-recru/administrator/admin_login.html" class="admin-link">
                         <i class="fa-solid fa-user-lock"></i> Portal Admin
                     </a>
                 </div>
@@ -476,90 +439,89 @@
 
     <script>
         const SUPABASE_URL = "https://bzlewbetssmjrsmfbcmy.supabase.co";
-        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ6bGV3YmV0c3NtanJzbWZiY215Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzNDA2MjgsImV4cCI6MjA5MTkxNjYyOH0.qO2AHNwe9Rlh1DImyJJZLzxXoHPSTRKmQZYwWqz1rjQ";
-        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ6bGV3YmV0c3NtanJzbWZiY215Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzNDA2MjgsImV4cCI6MjA5MTkxNjYyOH0.qO2AHNwe9Rlh1DImyJJZLzxXoHPSTRKmQZYwWqz1rjQ";
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        let isNewUser = false;
+        let isRecruitmentOpen = false;
 
-        document.getElementById('mainForm').onsubmit = async (e) => {
-            e.preventDefault();
-            const btn = document.getElementById('btnAction');
-            const emailInput = document.getElementById('email').value.trim();
+        async function loadRecruitmentStatus() {
+            const { data, error } = await _supabase.from('status').select('*').eq('id', 1).single();
 
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Mengecek...</span>';
+            if (error) {
+                console.error('Error status:', error);
+                return;
+            }
 
-            try {
-                const { data, error } = await _supabase
-                    .from('applicants')
-                    .select('*')
-                    .eq('email', emailInput);
+            const badge = document.getElementById('infobadge');
+            isRecruitmentOpen = data.sts;
 
-                if (error) throw error;
+            if (isRecruitmentOpen) {
+                badge.className = 'badge-open';
+                badge.innerHTML = '<i class="fa-solid fa-star"></i> <span>Open</span>';
+                document.getElementById('open-recruitment').style.display = 'block';
+                document.getElementById('closed-recruitment').style.display = 'none';
+            } else {
+                badge.className = 'badge-closed';
+                badge.innerHTML = '<i class="fa-solid fa-circle-xmark"></i> <span>Closed</span>';
+                document.getElementById('open-recruitment').style.display = 'none';
+                document.getElementById('closed-recruitment').style.display = 'block';
+            }
+            
+            checkSession();
+        }
 
-                if (data && data.length > 0) {
-                    localStorage.setItem('dcs_current_user', JSON.stringify(data[0]));
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Berhasil Masuk',
-                        text: 'Mengalihkan ke Dashboard...',
-                        timer: 1500,
-                        showConfirmButton: false,
-                        background: '#111827',
-                        color: '#fff'
-                    }).then(() => {
-                        window.location.href = 'dashboard.html';
-                    });
+        async function loginGoogle() {
+            if (!isRecruitmentOpen) return;
+            const { error } = await _supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: { redirectTo: window.location.href }
+            });
+        }
 
-                } else if (!isNewUser) {
-                    isNewUser = true;
-                    document.getElementById('regFields').style.display = 'block';
-                    document.getElementById('email').readOnly = true;
-                    document.getElementById('email').parentElement.style.opacity = '0.5';
-                    
-                    btn.disabled = false;
-                    btn.innerHTML = '<span>Daftar Sekarang</span> <i class="fa-solid fa-paper-plane"></i>';
-                    
-                    Swal.fire({
-                        title: 'Email Belum Terdaftar',
-                        text: 'Silakan lengkapi biodata Anda untuk mendaftar.',
-                        icon: 'info',
-                        background: '#111827',
-                        color: '#fff',
-                        confirmButtonColor: '#3b82f6'
-                    });
-                } else {
-                    const payload = {
-                        email: emailInput,
-                        nama: document.getElementById('nama').value,
-                        phone: document.getElementById('phone').value,
-                        posisi: document.getElementById('posisi').value,
-                        daop: document.getElementById('daop').value,
-                        status: 'Pending',
-                        skor_ujian: 0
-                    };
+        async function checkSession() {
+            const { data: { session } } = await _supabase.auth.getSession();
 
-                    if(!payload.nama || !payload.posisi) {
-                        throw new Error("Mohon lengkapi Nama dan Posisi.");
-                    }
+            if (session) {
+                const email = session.user.email;
+                const { data: applicant } = await _supabase.from('applicants').select('*').eq('email', email).single();
 
-                    const { data: insData, error: insError } = await _supabase
-                        .from('applicants')
-                        .insert([payload])
-                        .select();
-
-                    if (insError) throw insError;
-
-                    localStorage.setItem('dcs_current_user', JSON.stringify(insData[0]));
+                if (applicant) {
+                    localStorage.setItem('dcs_current_user', JSON.stringify(applicant));
                     window.location.href = 'dashboard.html';
+                } else {
+                    if (!isRecruitmentOpen) {
+                        _supabase.auth.signOut();
+                        return;
+                    }
+                    // Tampilkan form registrasi pelengkap
+                    document.getElementById('authContent').style.display = 'none';
+                    document.getElementById('regFields').style.display = 'block';
+                    document.getElementById('displayEmail').value = email;
+                    document.getElementById('nama').value = session.user.user_metadata.full_name || '';
                 }
+            }
+        }
 
-            } catch (err) {
-                btn.disabled = false;
-                btn.innerHTML = '<span>Coba Lagi</span> <i class="fa-solid fa-rotate-right"></i>';
-                Swal.fire({ icon: 'error', title: 'Kesalahan', text: err.message, background: '#111827', color: '#fff' });
+        document.getElementById('profileForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('displayEmail').value;
+            const nama = document.getElementById('nama').value;
+            const posisi = document.getElementById('posisi').value;
+            const daop = document.getElementById('daop').value;
+
+            const { data, error } = await _supabase.from('applicants').insert([{
+                email, nama, posisi, daop, status: 'Pending', skor_ujian: 0
+            }]).select();
+
+            if (error) {
+                Swal.fire('Error', error.message, 'error');
+            } else {
+                localStorage.setItem('dcs_current_user', JSON.stringify(data[0]));
+                window.location.href = 'dashboard.html';
             }
         };
+
+        window.onload = loadRecruitmentStatus;
     </script>
 </body>
 </html>

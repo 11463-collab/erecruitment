@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DCS Admin Panel - Management</title>
+    <title>Double Coupler Studio - E-Recruitment Management</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -113,7 +113,31 @@
     </div>
 
     <div id="tab-soal" class="hidden animate__animated animate__fadeIn">
+        <div style="background: var(--card); padding: 25px; border-radius: 16px; border: 1px solid #334155; margin-bottom: 25px;">
+            <h3 style="margin-top:0; font-size: 1rem; color: var(--accent); display: flex; align-items: center; gap: 10px;">
+                <i class="fa-solid fa-clock-rotate-left"></i> Konfigurasi Waktu Ujian
+            </h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; align-items: flex-end;">
+                <div>
+                    <label style="font-size: 0.75rem; color: var(--muted); font-weight: bold; display: block; margin-bottom: 5px;">Mulai Akses Ujian</label>
+                    <input type="datetime-local" id="set_waktu_mulai">
+                </div>
+                <div>
+                    <label style="font-size: 0.75rem; color: var(--muted); font-weight: bold; display: block; margin-bottom: 5px;">Batas Akhir Akses</label>
+                    <input type="datetime-local" id="set_waktu_selesai">
+                </div>
+                <div>
+                    <label style="font-size: 0.75rem; color: var(--muted); font-weight: bold; display: block; margin-bottom: 5px;">Durasi Pengerjaan (Menit)</label>
+                    <input type="number" id="set_durasi" placeholder="60">
+                </div>
+                <button onclick="updateJadwalUjian()" style="background: var(--accent); color: #000; border: none; padding: 12px; border-radius: 10px; cursor: pointer; font-weight: bold; transition: 0.3s; height: 45px;">
+                    <i class="fa-solid fa-save"></i> Simpan Jadwal
+                </button>
+            </div>
+        </div>
+
         <button onclick="openAddSoal()" style="background:var(--success); color:white; border:none; padding:12px 20px; border-radius:10px; margin-bottom:15px; cursor:pointer; font-weight:bold;">+ Tambah Soal</button>
+        
         <div class="table-container">
             <table>
                 <thead>
@@ -240,7 +264,7 @@ function switchTab(target, btn) {
     document.getElementById('tab-admin').classList.toggle('hidden', target !== 'admin');
     
     if(target === 'pelamar') loadPelamar();
-    if(target === 'soal') loadSoal();
+    if(target === 'soal') { loadSoal(); loadJadwalUjian(); } 
     if(target === 'admin') loadAdminList();
 }
 
@@ -416,6 +440,34 @@ async function toggleRecruitment(isOpen) {
     refreshDashboard();
 }
 
+async function loadJadwalUjian() {
+    const { data } = await _supabase.from('status').select('*').eq('id', 1).single();
+    if(data) {
+        // Konversi format ISO ke format datetime-local (YYYY-MM-DDTHH:MM)
+        const formatDT = (dateStr) => dateStr ? new Date(dateStr).toISOString().slice(0,16) : '';
+        document.getElementById('set_waktu_mulai').value = formatDT(data.waktu_mulai);
+        document.getElementById('set_waktu_selesai').value = formatDT(data.waktu_selesai);
+        document.getElementById('set_durasi').value = data.durasi_ujian;
+    }
+}
+
+async function updateJadwalUjian() {
+    if(session.role !== 'Administrator') return Swal.fire('Ditolak', 'Hanya Administrator Utama yang berwenang.', 'error');
+    
+    const payload = {
+        waktu_mulai: document.getElementById('set_waktu_mulai').value,
+        waktu_selesai: document.getElementById('set_waktu_selesai').value,
+        durasi_ujian: parseInt(document.getElementById('set_durasi').value)
+    };
+
+    const { error } = await _supabase.from('status').update(payload).eq('id', 1);
+    if(!error) {
+        Toast.fire({ icon: 'success', title: 'Jadwal & durasi berhasil disimpan!' });
+    } else {
+        Swal.fire('Gagal', error.message, 'error');
+    }
+}
+
 // --- 8. AKUN & LOGOUT ---
 async function saveMyPassword() {
     const oldP = document.getElementById('old_pwd').value;
@@ -436,7 +488,7 @@ async function saveMyPassword() {
 
 function confirmLogout() {
     sessionStorage.clear(); 
-    window.location.href = '/administrator/admin_login.html';
+    window.location.href = '/e-recru/administrator/admin_login.html';
 }
 </script>
 </body>

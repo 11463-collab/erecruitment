@@ -520,8 +520,9 @@
                 window.location.href = 'dashboard.html';
             }
         };
+
         
-        setTimeout(function(){loadRecruitmentStatus}, 500);
+        let intervalId = setInterval(loadRecruitmentStatus, 2000);
     </script>
 </body>
 </html>

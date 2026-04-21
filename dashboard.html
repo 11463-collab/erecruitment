@@ -86,7 +86,6 @@
 
 <div class="container">
     <div class="dashboard-grid">
-        
         <div class="main-content">
             <div class="card hero">
                 <h1 id="welcome-user" style="margin: 0;">Halo!</h1>
@@ -166,9 +165,11 @@
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     async function initDashboard() {
+        // 1. Ambil data dari LocalStorage
         let localUser = JSON.parse(localStorage.getItem('dcs_current_user'));
         if (!localUser) { window.location.href = 'index.html'; return; }
 
+        // 2. Tarik data terbaru dari Supabase (Refresh Data)
         const { data: dbUser, error } = await _supabase
             .from('applicants')
             .select('*')
@@ -180,45 +181,46 @@
             localUser = dbUser;
         }
 
+        // 3. Update UI Header & Identitas
         document.getElementById('header-nama').innerText = localUser.nama;
         document.getElementById('avatar-initial').innerText = localUser.nama.charAt(0).toUpperCase();
         document.getElementById('welcome-user').innerText = `Halo, ${localUser.nama.split(' ')[0]}!`;
-        document.getElementById('disp-posisi').innerText = localUser.posisi;
-        document.getElementById('disp-daop').innerText = localUser.daop;
+        document.getElementById('disp-posisi').innerText = localUser.posisi || '-';
+        document.getElementById('disp-daop').innerText = localUser.daop || '-';
 
+        // 4. Logika Status Seleksi
         const statStatus = document.getElementById('stat-status');
         const linkContainer = document.getElementById('status-link-container');
         
         if (localUser.status === 'Lolos' || localUser.status === 'Gagal') {
             statStatus.innerText = "Data tersedia"; 
             statStatus.style.color = localUser.status === 'Lolos' ? "var(--success)" : "var(--danger)";
-            
             linkContainer.innerHTML = `<a href="status.html" class="btn-status">Lihat Detail <i class="fa-solid fa-arrow-right-long"></i></a>`;
         } else {
             statStatus.innerText = "Waiting..."; 
             statStatus.style.color = "var(--muted)";
+            linkContainer.innerHTML = '';
         }
 
+        // 5. Cek Kondisi Ujian & Pelanggaran
         const statUjian = document.getElementById('stat-ujian');
-        const hasFinishedExam = localUser.skor_ujian !== null && localUser.skor_ujian !== undefined && localUser.skor_ujian > 0;
-        
-        if (hasFinishedExam) {
-            statUjian.innerText = "Sudah";
-            statUjian.style.color = "var(--success)";
-        } else {
-            statUjian.innerText = "Belum";
-            statUjian.style.color = "var(--danger)";
-        }
-
         const examCard = document.getElementById('exam-card');
         const stepExam = document.getElementById('step-exam');
         const stepFinal = document.getElementById('step-final');
 
+        // Flag Kondisi
+        const hasFinishedExam = localUser.status === 'Sudah Ujian' || (localUser.skor_ujian !== null && localUser.skor_ujian > 0);
+        const isBanned = (localUser.jumlah_pelanggaran >= 3);
+
+        // RENDER KARTU UJIAN BERDASARKAN KONDISI
         if (hasFinishedExam) {
+            // KONDISI A: SUDAH SELESAI UJIAN
+            statUjian.innerText = "Sudah";
+            statUjian.style.color = "var(--success)";
             stepExam.classList.add('active');
             stepExam.querySelector('i').className = "fa-solid fa-circle-check";
             
-            if(localUser.status !== 'Pending') {
+            if(localUser.status !== 'Pending' && localUser.status !== 'Sudah Ujian') {
                 stepFinal.classList.add('active');
                 stepFinal.querySelector('i').className = "fa-solid fa-circle-check";
             }
@@ -228,14 +230,40 @@
                     <i class="fa-solid fa-check" style="font-size: 3rem; color: var(--success); margin-bottom: 15px;"></i>
                     <h3>Ujian Selesai</h3>
                     <p style="color: var(--muted); font-size: 0.9rem;">
-                        Terima kasih telah berpartisipasi dalam recruitment kami.
+                        Terima kasih telah berpartisipasi. Hasil asesmen Anda sudah tersimpan di sistem kami.
                     </p>
                 </div>
             `;
-        } else {
+        } 
+        else if (isBanned) {
+            statUjian.innerText = "DIBLOKIR";
+            statUjian.style.color = "var(--danger)";
+            
+            stepExam.style.opacity = "1";
+            stepExam.style.color = "var(--danger)";
+            stepExam.innerHTML = `<i class="fa-solid fa-circle-xmark"></i> Diskualifikasi Ujian`;
+
+            examCard.style.border = "2px solid var(--danger)";
+            examCard.innerHTML = `
+                <div style="text-align: center; padding: 15px;">
+                    <i class="fa-solid fa-user-slash" style="font-size: 3rem; color: var(--danger); margin-bottom: 15px;"></i>
+                    <h3 style="color: var(--danger); margin-bottom: 5px;">AKSES DIBLOKIR</h3>
+                    <p style="color: var(--muted); font-size: 0.85rem; margin-bottom: 20px;">
+                        Sistem mendeteksi <b>${localUser.jumlah_pelanggaran} kali pelanggaran</b> protokol keamanan (pindah tab/minimize) selama sesi ujian.
+                    </p>
+                    <div style="background: var(--danger); color: white; padding: 18px; border-radius: 12px; font-weight: 800; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px;">
+                        ANDA DIDISKUALIFIKASI DARI RECRUITMENT
+                    </div>
+                </div>
+            `;
+        } 
+        else {
+            statUjian.innerText = "Belum";
+            statUjian.style.color = "var(--danger)";
+            
             examCard.innerHTML = `
                 <h3 style="margin-top: 0;">Tugas Tertunda</h3>
-                <p style="color: var(--muted); font-size: 0.9rem; margin-bottom: 20px;">Silakan selesaikan <b>Asesmen Kompetensi Dasar</b> sekarang.</p>
+                <p style="color: var(--muted); font-size: 0.9rem; margin-bottom: 20px;">Silakan selesaikan <b>Asesmen Kompetensi Dasar</b> untuk melanjutkan proses seleksi.</p>
                 <a href="test/kerjakan/soal.html" class="btn-exam">
                     <i class="fa-solid fa-play-circle"></i> Mulai Ujian Sekarang
                 </a>
@@ -246,16 +274,17 @@
     function logout() {
         Swal.fire({
             title: 'Keluar Sesi?',
+            text: "Anda harus login kembali untuk mengakses dashboard.",
             icon: 'question',
             showCancelButton: true,
             confirmButtonColor: '#ffca28',
             cancelButtonColor: '#ef4444',
-            confirmButtonText: 'Ya',
+            confirmButtonText: 'Ya, Keluar',
             cancelButtonText: 'Batal'
         }).then((result) => {
             if (result.isConfirmed) {
                 localStorage.clear();
-                window.location.href = '/';
+                window.location.href = 'index.html';
             }
         });
     }

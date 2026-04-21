@@ -167,7 +167,7 @@
     async function initDashboard() {
         // 1. Ambil data dari LocalStorage
         let localUser = JSON.parse(localStorage.getItem('dcs_current_user'));
-        if (!localUser) { window.location.href = 'index.html'; return; }
+        if (!localUser) { window.location.href = 'index'; return; }
 
         // 2. Tarik data terbaru dari Supabase (Refresh Data)
         const { data: dbUser, error } = await _supabase
@@ -196,6 +196,9 @@
             statStatus.innerText = "Data tersedia"; 
             statStatus.style.color = localUser.status === 'Lolos' ? "var(--success)" : "var(--danger)";
             linkContainer.innerHTML = `<a href="status.html" class="btn-status">Lihat Detail <i class="fa-solid fa-arrow-right-long"></i></a>`;
+        } else if (localUser.status === 'diblokir') {
+            statStatus.innerText = "DIBLOKIR!"; 
+            statStatus.style.color = "var(--danger)";
         } else {
             statStatus.innerText = "Waiting..."; 
             statStatus.style.color = "var(--muted)";
@@ -236,6 +239,7 @@
             `;
         } 
         else if (isBanned) {
+            // KONDISI B: DISKUALIFIKASI (Pelanggaran >= 3)
             statUjian.innerText = "DIBLOKIR";
             statUjian.style.color = "var(--danger)";
             
@@ -258,6 +262,7 @@
             `;
         } 
         else {
+            // KONDISI C: BELUM UJIAN & AMAN
             statUjian.innerText = "Belum";
             statUjian.style.color = "var(--danger)";
             
@@ -271,6 +276,7 @@
         }
     }
 
+    // Fungsi Logout
     function logout() {
         Swal.fire({
             title: 'Keluar Sesi?',
@@ -289,6 +295,7 @@
         });
     }
 
+    // Jalankan Dashboard
     initDashboard();
 </script>
 </body>

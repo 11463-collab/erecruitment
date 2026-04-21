@@ -100,219 +100,228 @@
 </div>
 
 <script>
-    const SUPABASE_URL = "https://bzlewbetssmjrsmfbcmy.supabase.co";
-    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ6bGV3YmV0c3NtanJzbWZiY215Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzNDA2MjgsImV4cCI6MjA5MTkxNjYyOH0.qO2AHNwe9Rlh1DImyJJZLzxXoHPSTRKmQZYwWqz1rjQ";
-    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    // --- 1. KONFIGURASI & STATE ---
+const SUPABASE_URL = "https://bzlewbetssmjrsmfbcmy.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ6bGV3YmV0c3NtanJzbWZiY215Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzNDA2MjgsImV4cCI6MjA5MTkxNjYyOH0.qO2AHNwe9Rlh1DImyJJZLzxXoHPSTRKmQZYwWqz1rjQ";
+const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // --- STATE MANAGEMENT ---
-    let questions = [];
-    let currentIdx = 0;
-    let timerInterval;
+const mapHurufKeAngka = { 'A': 1, 'B': 2, 'C': 3, 'D': 4 };
+let questions = [];
+let currentIdx = 0;
+let timerInterval;
 
-    // Load data dari storage (jika ada)
-    const userData = JSON.parse(localStorage.getItem('dcs_current_user'));
-    let userAnswers = JSON.parse(sessionStorage.getItem('dcs_answers')) || {};
-    let violations = parseInt(sessionStorage.getItem('dcs_violations')) || 0;
+// Load data dari storage (Persistent Data)
+const userData = JSON.parse(localStorage.getItem('dcs_current_user'));
+let userAnswers = JSON.parse(sessionStorage.getItem('dcs_answers')) || {};
+let violations = parseInt(sessionStorage.getItem('dcs_violations')) || 0;
 
-    // Security Check
-    if (!userData) {
-        window.location.href = "index.html";
-    }
+// Proteksi Halaman
+if (!userData) {
+    window.location.href = "index.html";
+}
 
-    // --- INITIALIZATION ---
-    async function initExam() {
-        try {
-            // 1. Cek Konfigurasi Sistem
-            const { data: config, error: errCfg } = await _supabase.from('status').select('*').eq('id', 1).single();
-            if (errCfg || !config) return Swal.fire('Error', 'Gagal memuat sistem.', 'error');
+// --- 2. INISIALISASI UJIAN ---
+async function initExam() {
+    try {
+        // Cek Status Pendaftaran & Waktu
+        const { data: config, error: errCfg } = await _supabase.from('status').select('*').eq('id', 1).single();
+        if (errCfg || !config) throw new Error("Gagal memuat konfigurasi.");
 
-            if (!config.sts) {
-                await Swal.fire('Ditutup', 'Rekrutmen sedang tidak aktif.', 'warning');
-                window.location.href = 'dashboard.html'; return;
-            }
-
-            // 2. Cek Jadwal
-            const now = new Date();
-            if (now < new Date(config.waktu_mulai)) {
-                await Swal.fire('Sabar', 'Ujian belum dimulai.', 'info');
-                window.location.href = 'dashboard.html'; return;
-            }
-
-            // 3. Ambil Soal
-            const { data: qData, error: errQ } = await _supabase.from('exams').select('*').order('created_at', { ascending: true });
-            if (errQ || qData.length === 0) throw new Error("Bank soal kosong.");
-
-            questions = qData;
-            
-            // 4. Update UI Awal
-            document.getElementById('userName').innerText = userData.nama;
-            document.getElementById('displayPosisi').innerText = `Posisi: ${userData.posisi}`;
-            updateViolationUI(); 
-
-            // 5. Jalankan Timer & Render
-            startTimer(config.durasi_ujian * 60);
-            showQuestion(0);
-            renderNumberGrid();
-
-        } catch (e) {
-            console.error(e);
-            Swal.fire('Sistem Error', e.message, 'error');
+        if (!config.sts) {
+            await Swal.fire('Ditutup', 'Rekrutmen tidak aktif.', 'warning');
+            window.location.href = 'dashboard.html'; return;
         }
-    }
 
-    // --- TIMER LOGIC ---
-    function startTimer(duration) {
-        let timeLeft = duration;
-        const display = document.getElementById('timer');
+        // Ambil Bank Soal
+        const { data: qData, error: errQ } = await _supabase.from('exams').select('*').order('created_at', { ascending: true });
+        if (errQ || qData.length === 0) throw new Error("Soal belum tersedia.");
 
-        timerInterval = setInterval(() => {
-            let min = Math.floor(timeLeft / 60);
-            let sec = timeLeft % 60;
-            display.innerText = `${min < 10 ? '0'+min : min}:${sec < 10 ? '0'+sec : sec}`;
+        questions = qData;
+        
+        // Update UI Identitas
+        document.getElementById('userName').innerText = userData.nama;
+        document.getElementById('displayPosisi').innerText = `Posisi: ${userData.posisi}`;
+        
+        // Update UI Pelanggaran (Penting jika user refresh)
+        updateViolationUI(); 
 
-            if (timeLeft <= 60) display.style.color = "#ef4444";
-            if (timeLeft <= 0) {
-                clearInterval(timerInterval);
-                finishExam(true);
-            }
-            timeLeft--;
-        }, 1000);
-    }
-
-    // --- QUESTION LOGIC ---
-    function showQuestion(idx) {
-        currentIdx = idx;
-        const q = questions[idx];
-        const container = document.getElementById('questionContainer');
-
-        container.innerHTML = `
-            <div class="q-box animate__animated animate__fadeIn">
-                <p style="font-size: 1.1rem; line-height: 1.6;">
-                    <b style="color: var(--accent)">Pertanyaan ${idx + 1}:</b><br>
-                    ${q.pertanyaan}
-                </p>
-                <div class="options-list">
-                    ${['a', 'b', 'c', 'd'].map(opt => `
-                        <div class="option-item ${userAnswers[q.id] === opt.toUpperCase() ? 'selected' : ''}" 
-                            onclick="selectAnswer('${q.id}', '${opt.toUpperCase()}')">
-                            <span class="opt-label" style="margin-right:10px">${opt.toUpperCase()}.</span>
-                            <span>${q['opsi_' + opt]}</span>
-                        </div>
-                    `).join('')}
-                </div>
-            </div>
-        `;
-
-        document.getElementById('btnPrev').style.visibility = idx === 0 ? 'hidden' : 'visible';
-        const isLast = idx === questions.length - 1;
-        document.getElementById('btnNext').style.display = isLast ? 'none' : 'block';
-        document.getElementById('btnSubmit').style.display = isLast ? 'block' : 'none';
-
+        // Jalankan Sistem
+        startTimer(config.durasi_ujian * 60);
+        showQuestion(0);
         renderNumberGrid();
+
+    } catch (e) {
+        console.error(e);
+        Swal.fire('Error', e.message, 'error');
     }
+}
 
-    function selectAnswer(qId, choice) {
-        userAnswers[qId] = choice;
-        sessionStorage.setItem('dcs_answers', JSON.stringify(userAnswers));
-        showQuestion(currentIdx);
-    }
+// --- 3. SISTEM TIMER ---
+function startTimer(duration) {
+    let timeLeft = duration;
+    const display = document.getElementById('timer');
 
-    function changeQuestion(idx) {
-        if (idx >= 0 && idx < questions.length) showQuestion(idx);
-    }
+    timerInterval = setInterval(() => {
+        let min = Math.floor(timeLeft / 60);
+        let sec = timeLeft % 60;
+        display.innerText = `${min < 10 ? '0'+min : min}:${sec < 10 ? '0'+sec : sec}`;
 
-    function renderNumberGrid() {
-        const grid = document.getElementById('numberGrid');
-        grid.innerHTML = questions.map((q, i) => `
-            <button class="no-btn ${userAnswers[q.id] ? 'filled' : ''} ${i === currentIdx ? 'current' : ''}" 
-                    onclick="changeQuestion(${i})">
-                ${i + 1}
-            </button>
-        `).join('');
-    }
-
-    // --- VIOLATION SYSTEM ---
-    function updateViolationUI() {
-        const vCountEl = document.getElementById('vCount');
-        const vBarEl = document.getElementById('vBar');
-        vCountEl.innerText = violations;
-        vBarEl.style.width = (violations / 3 * 100) + '%';
-
-        if (violations >= 3) {
-            blockAndSubmit();
+        if (timeLeft <= 60) display.style.color = "#ef4444";
+        if (timeLeft <= 0) {
+            clearInterval(timerInterval);
+            finishExam(true); // Auto-submit jika waktu habis
         }
+        timeLeft--;
+    }, 1000);
+}
+
+// --- 4. RENDER SOAL & NAVIGASI ---
+function showQuestion(idx) {
+    currentIdx = idx;
+    const q = questions[idx];
+    const container = document.getElementById('questionContainer');
+
+    container.innerHTML = `
+        <div class="q-box animate__animated animate__fadeIn">
+            <p style="font-size: 1.1rem; line-height: 1.6;">
+                <b style="color: var(--accent)">Pertanyaan ${idx + 1}:</b><br>
+                ${q.pertanyaan}
+            </p>
+            <div class="options-list">
+                ${['a', 'b', 'c', 'd'].map(opt => `
+                    <div class="option-item ${userAnswers[q.id] === opt.toUpperCase() ? 'selected' : ''}" 
+                        onclick="selectAnswer('${q.id}', '${opt.toUpperCase()}')">
+                        <span class="opt-label" style="font-weight:bold; margin-right:10px">${opt.toUpperCase()}.</span>
+                        <span>${q['opsi_' + opt]}</span>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+
+    // Kontrol Tombol
+    document.getElementById('btnPrev').style.visibility = idx === 0 ? 'hidden' : 'visible';
+    const isLast = idx === questions.length - 1;
+    document.getElementById('btnNext').style.display = isLast ? 'none' : 'block';
+    document.getElementById('btnSubmit').style.display = isLast ? 'block' : 'none';
+
+    renderNumberGrid();
+}
+
+function selectAnswer(qId, choice) {
+    userAnswers[qId] = choice;
+    sessionStorage.setItem('dcs_answers', JSON.stringify(userAnswers));
+    showQuestion(currentIdx);
+}
+
+function changeQuestion(idx) {
+    if (idx >= 0 && idx < questions.length) showQuestion(idx);
+}
+
+function renderNumberGrid() {
+    const grid = document.getElementById('numberGrid');
+    grid.innerHTML = questions.map((q, i) => `
+        <button class="no-btn ${userAnswers[q.id] ? 'filled' : ''} ${i === currentIdx ? 'current' : ''}" 
+                onclick="changeQuestion(${i})">
+            ${i + 1}
+        </button>
+    `).join('');
+}
+
+// --- 5. SISTEM PELANGGARAN (ANTI-CHEAT) ---
+function updateViolationUI() {
+    const vCountEl = document.getElementById('vCount');
+    const vBarEl = document.getElementById('vBar');
+    if (vCountEl) vCountEl.innerText = violations;
+    if (vBarEl) vBarEl.style.width = (violations / 3 * 100) + '%';
+
+    if (violations >= 3) {
+        blockAndSubmit();
     }
+}
 
-    function handleViolation() {
-        violations++;
-        sessionStorage.setItem('dcs_violations', violations);
-        updateViolationUI();
+function handleViolation() {
+    violations++;
+    sessionStorage.setItem('dcs_violations', violations);
+    updateViolationUI();
 
-        if (violations < 3) {
-            Swal.fire({
-                title: 'Peringatan Keamanan!',
-                text: `Dilarang pindah tab/minimize. Pelanggaran: ${violations}/3`,
-                icon: 'warning',
-                confirmButtonText: 'Kembali Ujian',
-                allowOutsideClick: false
-            });
-        }
-    }
-
-    function blockAndSubmit() {
-        clearInterval(timerInterval);
+    if (violations < 3) {
         Swal.fire({
-            title: 'AKSES DIBLOKIR',
-            text: 'Anda terlalu banyak melakukan pelanggaran. Hasil dikirim otomatis.',
-            icon: 'error',
-            allowOutsideClick: false,
-            confirmButtonText: 'Selesai'
-        }).then(() => finishExam(true));
+            title: 'Peringatan!',
+            text: `Dilarang keluar halaman. Pelanggaran: ${violations}/3`,
+            icon: 'warning',
+            confirmButtonText: 'Kembali Ujian',
+            allowOutsideClick: false
+        });
+    }
+}
+
+function blockAndSubmit() {
+    clearInterval(timerInterval);
+    Swal.fire({
+        title: 'AKSES DIBLOKIR',
+        text: 'Anda melanggar aturan sebanyak 3 kali. Hasil dikirim otomatis.',
+        icon: 'error',
+        allowOutsideClick: false,
+        confirmButtonText: 'Selesai'
+    }).then(() => finishExam(true));
+}
+
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden && violations < 3) handleViolation();
+});
+
+// --- 6. SIMPAN HASIL KE DATABASE ---
+async function finishExam(isAuto = false) {
+    if (!isAuto) {
+        const res = await Swal.fire({
+            title: 'Kirim Jawaban?',
+            text: "Pastikan semua sudah terisi.",
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Ya, Kirim'
+        });
+        if (!res.isConfirmed) return;
     }
 
-    document.addEventListener('visibilitychange', () => {
-        if (document.hidden && violations < 3) handleViolation();
-    });
+    clearInterval(timerInterval);
+    Swal.fire({ title: 'Menyimpan...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
-    // --- SUBMIT LOGIC ---
-    async function finishExam(isAuto = false) {
-        if (!isAuto) {
-            const res = await Swal.fire({
-                title: 'Selesai Ujian?',
-                text: "Jawaban yang sudah dikirim tidak bisa diubah.",
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonText: 'Ya, Kirim'
-            });
-            if (!res.isConfirmed) return;
-        }
-
-        clearInterval(timerInterval);
-        Swal.fire({ title: 'Menyimpan Hasil...', didOpen: () => Swal.showLoading() });
-
-        // Hitung Skor
+    try {
         let score = 0;
-        questions.forEach(q => {
-            if (userAnswers[q.id] === q.jawaban_benar) score++;
+        
+        // Konversi jawaban ke format Array Angka [1,2,4,3...]
+        const listJawabanAngka = questions.map(q => {
+            const ans = userAnswers[q.id];
+            if (ans === q.jawaban_benar) score++;
+            return mapHurufKeAngka[ans] || 0; // 0 jika kosong
         });
+
         const finalScore = Math.round((score / questions.length) * 100);
 
-        // Update Database
+        // Update ke Tabel Applicants
         const { error } = await _supabase.from('applicants')
-            .update({ skor_ujian: finalScore, status: 'Sudah Ujian' })
+            .update({ 
+                skor_ujian: finalScore, 
+                status: 'Sudah Ujian',
+                Jawaban: listJawabanAngka,
+                jumlah_pelanggaran: violations
+            })
             .eq('email', userData.email);
 
-        if (!error) {
-            sessionStorage.clear();
-            localStorage.removeItem('dcs_current_user');
-            window.location.href = "success.html";
-        } else {
-            Swal.fire('Gagal', 'Terjadi masalah saat menyimpan.', 'error');
-        }
-    }
+        if (error) throw error;
 
-    // Start!
-    initExam();
+        sessionStorage.clear();
+        localStorage.removeItem('dcs_current_user');
+        window.location.href = "success.html";
+
+    } catch (err) {
+        console.error(err);
+        Swal.fire('Gagal Simpan', err.message, 'error');
+    }
+}
+
+initExam();
 </script>
 </body>
 </html>

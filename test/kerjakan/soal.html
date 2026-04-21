@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ujian Kompetensi - DCS Recruitment</title>
+    <title>Ujian - DCS Recruitment</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -101,137 +101,176 @@
 
 <script>
     const SUPABASE_URL = "https://bzlewbetssmjrsmfbcmy.supabase.co";
-    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ6bGV3YmV0c3NtanJzbWZiY215Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzNDA2MjgsImV4cCI6MjA5MTkxNjYyOH0.qO2AHNwe9Rlh1DImyJJZLzxXoHPSTRKmQZYwWqz1rjQ";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ6bGV3YmV0c3NtanJzbWZiY215Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzNDA2MjgsImV4cCI6MjA5MTkxNjYyOH0.qO2AHNwe9Rlh1DImyJJZLzxXoHPSTRKmQZYwWqz1rjQ"; // Ganti dengan anon key Anda
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     let questions = [];
-    let userAnswers = {}; // { questionId: 'A' }
+    let userAnswers = {};
     let currentIdx = 0;
-    let violations = 0;
+    let timerInterval;
     const userData = JSON.parse(localStorage.getItem('dcs_current_user'));
 
-    if (!userData) window.location.href = "/erecru/index.html";
+    if (!userData) {
+        window.location.href = "index.html";
+    }
 
     async function initExam() {
-        document.getElementById('userName').innerText = userData.nama;
-        document.getElementById('displayPosisi').innerText = `Posisi: ${userData.posisi}`;
+        try {
+            const { data: config, error: errCfg } = await _supabase.from('status').select('*').eq('id', 1).single();
+            
+            if (errCfg || !config) return Swal.fire('Error', 'Gagal memuat konfigurasi sistem.', 'error');
 
-        const { data, error } = await _supabase.from('exams').select('*');
-        if (error) return Swal.fire('Error', 'Gagal ambil soal', 'error');
-        
-        questions = data;
-        renderNumberGrid();
-        showQuestion(0);
+            if (!config.sts) {
+                await Swal.fire('Ditutup', 'Rekrutmen saat ini sedang tidak dibuka.', 'warning');
+                window.location.href = '/e-recru/dashboard.html'; return;
+            }
+
+            const now = new Date();
+            const startTime = new Date(config.waktu_mulai);
+            const endTime = new Date(config.waktu_selesai);
+
+            if (now < startTime) {
+                await Swal.fire('Belum Dimulai', `Ujian baru dapat diakses pada: ${startTime.toLocaleString('id-ID')}`, 'info');
+                window.location.href = '/e-recru/dashboard.html'; return;
+            }
+            if (now > endTime) {
+                await Swal.fire('Waktu Habis', 'Masa pengerjaan untuk jadwal ini telah berakhir.', 'error');
+                window.location.href = '/e-recru/dashboard.html'; return;
+            }
+
+            const { data: qData, error: errQ } = await _supabase.from('exams').select('*').order('created_at', { ascending: true });
+            
+            if (errQ || qData.length === 0) {
+                await Swal.fire('Error', 'Bank soal kosong. Hubungi admin.', 'error');
+                window.location.href = '/e-recru/dashboard.html'; return;
+            }
+
+            questions = qData;
+            document.getElementById('userName').innerText = userData.nama;
+            document.getElementById('displayPosisi').innerText = `Posisi: ${userData.posisi}`;
+            
+            startTimer(config.durasi_ujian * 60);
+            showQuestion(0);
+            renderNumberGrid();
+
+        } catch (e) {
+            console.error(e);
+            Swal.fire('Error', 'Terjadi kesalahan sistem.', 'error');
+        }
     }
 
-    function renderNumberGrid() {
-        const grid = document.getElementById('numberGrid');
-        grid.innerHTML = '';
-        questions.forEach((_, i) => {
-            const isFilled = userAnswers[questions[i].id] ? 'filled' : '';
-            const isCurrent = i === currentIdx ? 'current' : '';
-            grid.innerHTML += `<button class="no-btn ${isFilled} ${isCurrent}" onclick="changeQuestion(${i})">${i + 1}</button>`;
-        });
+    // --- 3. LOGIKA TIMER ---
+    function startTimer(durationInSeconds) {
+        let timeLeft = durationInSeconds;
+        const timerDisplay = document.getElementById('timer');
+
+        timerInterval = setInterval(() => {
+            let minutes = Math.floor(timeLeft / 60);
+            let seconds = timeLeft % 60;
+
+            timerDisplay.innerText = `${minutes < 10 ? '0'+minutes : minutes}:${seconds < 10 ? '0'+seconds : seconds}`;
+
+            if (timeLeft <= 60) {
+                timerDisplay.style.color = "#ef4444";
+                timerDisplay.classList.add('animate__animated', 'animate__flash', 'animate__infinite');
+            }
+
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                autoSubmit(); 
+            }
+            timeLeft--;
+        }, 1000);
     }
 
+    // --- 4. LOGIKA NAVIGASI & RENDER SOAL ---
     function showQuestion(idx) {
         currentIdx = idx;
         const q = questions[idx];
         const container = document.getElementById('questionContainer');
-        
+
         container.innerHTML = `
-            <div class="q-box">
-                <p style="font-size: 1.1rem; line-height: 1.6; margin-bottom: 20px;"><b>Soal ${idx + 1}:</b><br>${q.pertanyaan}</p>
-                <div class="option-item ${userAnswers[q.id] === 'A' ? 'selected' : ''}" onclick="selectAnswer('${q.id}', 'A')"><b>A.</b> ${q.opsi_a}</div>
-                <div class="option-item ${userAnswers[q.id] === 'B' ? 'selected' : ''}" onclick="selectAnswer('${q.id}', 'B')"><b>B.</b> ${q.opsi_b}</div>
-                <div class="option-item ${userAnswers[q.id] === 'C' ? 'selected' : ''}" onclick="selectAnswer('${q.id}', 'C')"><b>C.</b> ${q.opsi_c}</div>
-                <div class="option-item ${userAnswers[q.id] === 'D' ? 'selected' : ''}" onclick="selectAnswer('${q.id}', 'D')"><b>D.</b> ${q.opsi_d}</div>
+            <div class="q-box animate__animated animate__fadeIn">
+                <p style="font-size: 1.1rem; line-height: 1.6;">
+                    <b style="color: var(--accent)">Pertanyaan ${idx + 1}:</b><br>
+                    ${q.pertanyaan}
+                </p>
+                <div class="options-list">
+                    ${['a', 'b', 'c', 'd'].map(opt => `
+                        <div class="option-item ${userAnswers[q.id] === opt.toUpperCase() ? 'selected' : ''}" 
+                            onclick="selectAnswer('${q.id}', '${opt.toUpperCase()}')">
+                            <span class="opt-label">${opt.toUpperCase()}</span>
+                            <span>${q['opsi_' + opt]}</span>
+                        </div>
+                    `).join('')}
+                </div>
             </div>
         `;
 
-        // Navigasi Button logic
+        // Update tombol Navigasi
         document.getElementById('btnPrev').style.visibility = idx === 0 ? 'hidden' : 'visible';
-        document.getElementById('btnNext').style.display = idx === questions.length - 1 ? 'none' : 'block';
-        document.getElementById('btnSubmit').style.display = idx === questions.length - 1 ? 'block' : 'none';
         
+        const isLast = idx === questions.length - 1;
+        document.getElementById('btnNext').style.display = isLast ? 'none' : 'block';
+        document.getElementById('btnSubmit').style.display = isLast ? 'block' : 'none';
+
         renderNumberGrid();
     }
 
-    function selectAnswer(qId, val) {
-        userAnswers[qId] = val;
-        showQuestion(currentIdx);
+    function selectAnswer(questionId, choice) {
+        userAnswers[questionId] = choice;
+        showQuestion(currentIdx); // Re-render untuk update class 'selected'
     }
 
     function changeQuestion(idx) {
-        if (idx >= 0 && idx < questions.length) showQuestion(idx);
-    }
-
-    // ANTI CHEAT LOGIC
-    window.addEventListener('blur', () => {
-        violations++;
-        updateViolationUI();
-
-        if (violations >= 3) {
-            diskualifikasiUser();
-        } else {
-            Swal.fire({
-                title: 'Pelanggaran Terdeteksi!',
-                text: `Jangan berpindah tab! Pelanggaran ${violations}/3. Jika mencapai 3, Anda akan didiskualifikasi secara otomatis.`,
-                icon: 'error',
-                confirmButtonColor: '#3b82f6'
-            });
+        if (idx >= 0 && idx < questions.length) {
+            showQuestion(idx);
         }
-    });
-
-    function updateViolationUI() {
-        document.getElementById('vCount').innerText = violations;
-        document.getElementById('vBar').style.width = (violations / 3 * 100) + '%';
     }
 
-    async function diskualifikasiUser() {
-        // Update skor jadi 0 dan status Gagal
-        await _supabase.from('applicants').update({ skor_ujian: 0, status: 'Gagal' }).eq('email', userData.email);
-        
-        Swal.fire({
-            title: 'DISKUALIFIKASI!',
-            text: 'Anda melanggar aturan ujian sebanyak 3 kali. Akses ujian ditutup.',
-            icon: 'error',
-            allowOutsideClick: false,
-            confirmButtonText: 'Kembali ke Dashboard'
-        }).then(() => {
-            window.location.href = "/e-recru/dashboard.html";
-        });
+    function renderNumberGrid() {
+        const grid = document.getElementById('numberGrid');
+        grid.innerHTML = questions.map((q, i) => `
+            <button class="no-btn ${userAnswers[q.id] ? 'filled' : ''} ${i === currentIdx ? 'current' : ''}" 
+                    onclick="changeQuestion(${i})">
+                ${i + 1}
+            </button>
+        `).join('');
     }
 
-    async function finishExam() {
-        // 1. Cek apakah ada soal yang belum dijawab
-        const totalSoal = questions.length;
-        const dijawab = Object.keys(userAnswers).length;
-
-        const confirm = await Swal.fire({
-            title: 'Kirim Jawaban?',
-            text: dijawab < totalSoal 
-                ? `Anda baru menjawab ${dijawab} dari ${totalSoal} soal. Yakin ingin mengirim?` 
-                : "Semua soal telah dijawab. Kirim sekarang?",
-            icon: dijawab < totalSoal ? 'warning' : 'question',
-            showCancelButton: true,
-            confirmButtonColor: '#ffca28',
-            cancelButtonColor: '#334155',
-            confirmButtonText: 'Ya, Kirim!',
-            cancelButtonText: 'Cek Lagi'
+    // --- 5. FINISH & AUTO-SUBMIT ---
+    async function autoSubmit() {
+        await Swal.fire({
+            title: 'Waktu Habis!',
+            text: 'Sistem akan mengirimkan jawaban Anda secara otomatis.',
+            icon: 'warning',
+            timer: 3000,
+            showConfirmButton: false,
+            allowOutsideClick: false
         });
+        finishExam(true); // Parameter true artinya otomatis
+    }
 
-        if (!confirm.isConfirmed) return;
+    async function finishExam(isAuto = false) {
+        // Jika user klik tombol manual, tanya konfirmasi
+        if (!isAuto) {
+            const result = await Swal.fire({
+                title: 'Kirim Jawaban?',
+                text: "Anda tidak dapat mengulang ujian kembali!",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#3b82f6',
+                cancelButtonColor: '#334155',
+                confirmButtonText: 'Ya, Selesai'
+            });
+            if (!result.isConfirmed) return;
+        }
 
-        // 2. Tampilkan Loading
-        Swal.fire({ 
-            title: 'Menyimpan Hasil...', 
-            text: 'Mohon tunggu sebentar, jangan tutup browser.',
-            allowOutsideClick: false,
-            didOpen: () => Swal.showLoading() 
-        });
+        // Hentikan timer & tampilkan loading
+        clearInterval(timerInterval);
+        Swal.fire({ title: 'Mengirim...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
-        // 3. Hitung Skor
+        // Hitung Skor
         let correctCount = 0;
         questions.forEach(q => {
             if (userAnswers[q.id] === q.jawaban_benar) {
@@ -239,40 +278,33 @@
             }
         });
 
-        const finalScore = Math.round((correctCount / totalSoal) * 100);
+        const finalScore = Math.round((correctCount / questions.length) * 100);
 
-        // 4. Update ke Database Supabase
-        const { error } = await _supabase
-            .from('applicants')
+        // Update ke Database
+        const { error } = await _supabase.from('applicants')
             .update({ 
                 skor_ujian: finalScore,
-                // Kita juga set status ke 'Pending' lagi untuk memastikan 
-                // data ter-refresh di dashboard
-                status: userData.status 
+                status: 'Pending' // atau status lain sesuai keinginan
             })
             .eq('email', userData.email);
 
         if (!error) {
-            // 5. Update Local Storage agar Dashboard langsung berubah warnanya
-            userData.skor_ujian = finalScore;
-            localStorage.setItem('dcs_current_user', JSON.stringify(userData));
-
-            // 6. Redirect ke halaman Success
-            Swal.fire({
-                title: 'Berhasil!',
-                text: 'Jawaban Anda telah tersimpan di sistem kami.',
-                icon: 'success',
-                timer: 2000,
-                showConfirmButton: false
-            }).then(() => {
-                window.location.href = "success.html";
-            });
+            localStorage.removeItem('dcs_current_user'); 
+            window.location.href = "success.html";
         } else {
-            console.error(error);
-            Swal.fire('Gagal!', 'Terjadi kesalahan saat mengirim: ' + error.message, 'error');
+            Swal.fire('Gagal', 'Gagal menyimpan hasil: ' + error.message, 'error');
         }
     }
 
+    // --- 6. FITUR KEAMANAN (ANTI-TAB SWITCH) ---
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+            // Opsional: Beri peringatan jika user pindah tab
+            console.warn("User meninggalkan halaman ujian!");
+        }
+    });
+
+    // Jalankan Fungsi Utama
     initExam();
 </script>
 </body>

@@ -101,89 +101,85 @@
 
 <script>
     const SUPABASE_URL = "https://bzlewbetssmjrsmfbcmy.supabase.co";
-    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ6bGV3YmV0c3NtanJzbWZiY215Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzNDA2MjgsImV4cCI6MjA5MTkxNjYyOH0.qO2AHNwe9Rlh1DImyJJZLzxXoHPSTRKmQZYwWqz1rjQ"; // Ganti dengan anon key Anda
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ6bGV3YmV0c3NtanJzbWZiY215Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzNDA2MjgsImV4cCI6MjA5MTkxNjYyOH0.qO2AHNwe9Rlh1DImyJJZLzxXoHPSTRKmQZYwWqz1rjQ";
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+    // --- STATE MANAGEMENT ---
     let questions = [];
-    let userAnswers = {};
     let currentIdx = 0;
     let timerInterval;
-    const userData = JSON.parse(localStorage.getItem('dcs_current_user'));
 
+    // Load data dari storage (jika ada)
+    const userData = JSON.parse(localStorage.getItem('dcs_current_user'));
+    let userAnswers = JSON.parse(sessionStorage.getItem('dcs_answers')) || {};
+    let violations = parseInt(sessionStorage.getItem('dcs_violations')) || 0;
+
+    // Security Check
     if (!userData) {
-        window.location.href = "https://e-recruitment.benevolentclass.my.id/";
+        window.location.href = "index.html";
     }
 
+    // --- INITIALIZATION ---
     async function initExam() {
         try {
+            // 1. Cek Konfigurasi Sistem
             const { data: config, error: errCfg } = await _supabase.from('status').select('*').eq('id', 1).single();
-            
-            if (errCfg || !config) return Swal.fire('Error', 'Gagal memuat konfigurasi sistem.', 'error');
+            if (errCfg || !config) return Swal.fire('Error', 'Gagal memuat sistem.', 'error');
 
             if (!config.sts) {
-                await Swal.fire('Ditutup', 'Rekrutmen saat ini sedang tidak dibuka.', 'warning');
-                window.location.href = 'https://e-recruitment.benevolentclass.my.id/dashboard'; return;
+                await Swal.fire('Ditutup', 'Rekrutmen sedang tidak aktif.', 'warning');
+                window.location.href = 'dashboard.html'; return;
             }
 
+            // 2. Cek Jadwal
             const now = new Date();
-            const startTime = new Date(config.waktu_mulai);
-            const endTime = new Date(config.waktu_selesai);
-
-            if (now < startTime) {
-                await Swal.fire('Belum Dimulai', `Ujian baru dapat diakses pada: ${startTime.toLocaleString('id-ID')}`, 'info');
-                window.location.href = 'https://e-recruitment.benevolentclass.my.id/dashboard'; return;
-            }
-            if (now > endTime) {
-                await Swal.fire('Waktu Habis', 'Masa pengerjaan untuk jadwal ini telah berakhir.', 'error');
-                window.location.href = 'https://e-recruitment.benevolentclass.my.id/dashboard'; return;
+            if (now < new Date(config.waktu_mulai)) {
+                await Swal.fire('Sabar', 'Ujian belum dimulai.', 'info');
+                window.location.href = 'dashboard.html'; return;
             }
 
+            // 3. Ambil Soal
             const { data: qData, error: errQ } = await _supabase.from('exams').select('*').order('created_at', { ascending: true });
-            
-            if (errQ || qData.length === 0) {
-                await Swal.fire('Error', 'Bank soal kosong. Hubungi admin.', 'error');
-                window.location.href = 'https://e-recruitment.benevolentclass.my.id/dashboard'; return;
-            }
+            if (errQ || qData.length === 0) throw new Error("Bank soal kosong.");
 
             questions = qData;
+            
+            // 4. Update UI Awal
             document.getElementById('userName').innerText = userData.nama;
             document.getElementById('displayPosisi').innerText = `Posisi: ${userData.posisi}`;
-            
+            updateViolationUI(); 
+
+            // 5. Jalankan Timer & Render
             startTimer(config.durasi_ujian * 60);
             showQuestion(0);
             renderNumberGrid();
 
         } catch (e) {
             console.error(e);
-            Swal.fire('Error', 'Terjadi kesalahan sistem.', 'error');
+            Swal.fire('Sistem Error', e.message, 'error');
         }
     }
 
-    // --- 3. LOGIKA TIMER ---
-    function startTimer(durationInSeconds) {
-        let timeLeft = durationInSeconds;
-        const timerDisplay = document.getElementById('timer');
+    // --- TIMER LOGIC ---
+    function startTimer(duration) {
+        let timeLeft = duration;
+        const display = document.getElementById('timer');
 
         timerInterval = setInterval(() => {
-            let minutes = Math.floor(timeLeft / 60);
-            let seconds = timeLeft % 60;
+            let min = Math.floor(timeLeft / 60);
+            let sec = timeLeft % 60;
+            display.innerText = `${min < 10 ? '0'+min : min}:${sec < 10 ? '0'+sec : sec}`;
 
-            timerDisplay.innerText = `${minutes < 10 ? '0'+minutes : minutes}:${seconds < 10 ? '0'+seconds : seconds}`;
-
-            if (timeLeft <= 60) {
-                timerDisplay.style.color = "#ef4444";
-                timerDisplay.classList.add('animate__animated', 'animate__flash', 'animate__infinite');
-            }
-
+            if (timeLeft <= 60) display.style.color = "#ef4444";
             if (timeLeft <= 0) {
                 clearInterval(timerInterval);
-                autoSubmit(); 
+                finishExam(true);
             }
             timeLeft--;
         }, 1000);
     }
 
-    // --- 4. LOGIKA NAVIGASI & RENDER SOAL ---
+    // --- QUESTION LOGIC ---
     function showQuestion(idx) {
         currentIdx = idx;
         const q = questions[idx];
@@ -199,7 +195,7 @@
                     ${['a', 'b', 'c', 'd'].map(opt => `
                         <div class="option-item ${userAnswers[q.id] === opt.toUpperCase() ? 'selected' : ''}" 
                             onclick="selectAnswer('${q.id}', '${opt.toUpperCase()}')">
-                            <span class="opt-label">${opt.toUpperCase()}</span>
+                            <span class="opt-label" style="margin-right:10px">${opt.toUpperCase()}.</span>
                             <span>${q['opsi_' + opt]}</span>
                         </div>
                     `).join('')}
@@ -207,9 +203,7 @@
             </div>
         `;
 
-        // Update tombol Navigasi
         document.getElementById('btnPrev').style.visibility = idx === 0 ? 'hidden' : 'visible';
-        
         const isLast = idx === questions.length - 1;
         document.getElementById('btnNext').style.display = isLast ? 'none' : 'block';
         document.getElementById('btnSubmit').style.display = isLast ? 'block' : 'none';
@@ -217,15 +211,14 @@
         renderNumberGrid();
     }
 
-    function selectAnswer(questionId, choice) {
-        userAnswers[questionId] = choice;
-        showQuestion(currentIdx); // Re-render untuk update class 'selected'
+    function selectAnswer(qId, choice) {
+        userAnswers[qId] = choice;
+        sessionStorage.setItem('dcs_answers', JSON.stringify(userAnswers));
+        showQuestion(currentIdx);
     }
 
     function changeQuestion(idx) {
-        if (idx >= 0 && idx < questions.length) {
-            showQuestion(idx);
-        }
+        if (idx >= 0 && idx < questions.length) showQuestion(idx);
     }
 
     function renderNumberGrid() {
@@ -238,73 +231,87 @@
         `).join('');
     }
 
-    // --- 5. FINISH & AUTO-SUBMIT ---
-    async function autoSubmit() {
-        await Swal.fire({
-            title: 'Waktu Habis!',
-            text: 'Sistem akan mengirimkan jawaban Anda secara otomatis.',
-            icon: 'warning',
-            timer: 3000,
-            showConfirmButton: false,
-            allowOutsideClick: false
-        });
-        finishExam(true); // Parameter true artinya otomatis
+    // --- VIOLATION SYSTEM ---
+    function updateViolationUI() {
+        const vCountEl = document.getElementById('vCount');
+        const vBarEl = document.getElementById('vBar');
+        vCountEl.innerText = violations;
+        vBarEl.style.width = (violations / 3 * 100) + '%';
+
+        if (violations >= 3) {
+            blockAndSubmit();
+        }
     }
 
+    function handleViolation() {
+        violations++;
+        sessionStorage.setItem('dcs_violations', violations);
+        updateViolationUI();
+
+        if (violations < 3) {
+            Swal.fire({
+                title: 'Peringatan Keamanan!',
+                text: `Dilarang pindah tab/minimize. Pelanggaran: ${violations}/3`,
+                icon: 'warning',
+                confirmButtonText: 'Kembali Ujian',
+                allowOutsideClick: false
+            });
+        }
+    }
+
+    function blockAndSubmit() {
+        clearInterval(timerInterval);
+        Swal.fire({
+            title: 'AKSES DIBLOKIR',
+            text: 'Anda terlalu banyak melakukan pelanggaran. Hasil dikirim otomatis.',
+            icon: 'error',
+            allowOutsideClick: false,
+            confirmButtonText: 'Selesai'
+        }).then(() => finishExam(true));
+    }
+
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden && violations < 3) handleViolation();
+    });
+
+    // --- SUBMIT LOGIC ---
     async function finishExam(isAuto = false) {
-        // Jika user klik tombol manual, tanya konfirmasi
         if (!isAuto) {
-            const result = await Swal.fire({
-                title: 'Kirim Jawaban?',
-                text: "Anda tidak dapat mengulang ujian kembali!",
+            const res = await Swal.fire({
+                title: 'Selesai Ujian?',
+                text: "Jawaban yang sudah dikirim tidak bisa diubah.",
                 icon: 'question',
                 showCancelButton: true,
-                confirmButtonColor: '#3b82f6',
-                cancelButtonColor: '#334155',
-                confirmButtonText: 'Ya, Selesai'
+                confirmButtonText: 'Ya, Kirim'
             });
-            if (!result.isConfirmed) return;
+            if (!res.isConfirmed) return;
         }
 
-        // Hentikan timer & tampilkan loading
         clearInterval(timerInterval);
-        Swal.fire({ title: 'Mengirim...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        Swal.fire({ title: 'Menyimpan Hasil...', didOpen: () => Swal.showLoading() });
 
         // Hitung Skor
-        let correctCount = 0;
+        let score = 0;
         questions.forEach(q => {
-            if (userAnswers[q.id] === q.jawaban_benar) {
-                correctCount++;
-            }
+            if (userAnswers[q.id] === q.jawaban_benar) score++;
         });
+        const finalScore = Math.round((score / questions.length) * 100);
 
-        const finalScore = Math.round((correctCount / questions.length) * 100);
-
-        // Update ke Database
+        // Update Database
         const { error } = await _supabase.from('applicants')
-            .update({ 
-                skor_ujian: finalScore,
-                status: 'Pending' // atau status lain sesuai keinginan
-            })
+            .update({ skor_ujian: finalScore, status: 'Sudah Ujian' })
             .eq('email', userData.email);
 
         if (!error) {
-            localStorage.removeItem('dcs_current_user'); 
+            sessionStorage.clear();
+            localStorage.removeItem('dcs_current_user');
             window.location.href = "success.html";
         } else {
-            Swal.fire('Gagal', 'Gagal menyimpan hasil: ' + error.message, 'error');
+            Swal.fire('Gagal', 'Terjadi masalah saat menyimpan.', 'error');
         }
     }
 
-    // --- 6. FITUR KEAMANAN (ANTI-TAB SWITCH) ---
-    document.addEventListener('visibilitychange', () => {
-        if (document.hidden) {
-            // Opsional: Beri peringatan jika user pindah tab
-            console.warn("User meninggalkan halaman ujian!");
-        }
-    });
-
-    // Jalankan Fungsi Utama
+    // Start!
     initExam();
 </script>
 </body>

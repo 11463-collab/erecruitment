@@ -307,7 +307,7 @@ async function finishExam(isAuto = false) {
         // Update status akhir dan jumlah pelanggaran terakhir
         const { error } = await _supabase.from('applicants')
             .update({ 
-                status: 'Sudah Ujian',
+                status: 'Pending',
                 jumlah_pelanggaran: violations
             })
             .eq('email', userData.email);

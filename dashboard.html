@@ -9,60 +9,26 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         :root { 
-            --bg: #0f172a; 
-            --card: #1e293b; 
-            --accent: #ffca28; 
-            --text: #f8fafc; 
-            --muted: #94a3b8; 
-            --glass: rgba(30, 41, 59, 0.7); 
-            --danger: #ef4444;
-            --success: #22c55e;
+            --bg: #0f172a; --card: #1e293b; --accent: #ffca28; 
+            --text: #f8fafc; --muted: #94a3b8; --glass: rgba(30, 41, 59, 0.7); 
+            --danger: #ef4444; --success: #22c55e;
         }
-        
         body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; margin: 0; padding: 0; }
-
-        header { 
-            background: var(--glass); backdrop-filter: blur(10px);
-            padding: 12px 5%; display: flex; justify-content: space-between; align-items: center;
-            border-bottom: 1px solid #334155; position: sticky; top: 0; z-index: 100;
-        }
-        .user-nav { display: flex; align-items: center; gap: 15px; cursor: pointer; padding: 5px 15px; border-radius: 50px; transition: 0.3s; background: rgba(255,255,255,0.05); }
-        .user-nav:hover { background: rgba(255,202,40,0.1); }
+        header { background: var(--glass); backdrop-filter: blur(10px); padding: 12px 5%; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; position: sticky; top: 0; z-index: 100; }
+        .user-nav { display: flex; align-items: center; gap: 15px; cursor: pointer; padding: 5px 15px; border-radius: 50px; background: rgba(255,255,255,0.05); }
         .avatar { width: 32px; height: 32px; background: var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #000; font-weight: bold; }
-
         .container { max-width: 1000px; margin: 30px auto; padding: 0 20px; }
         .dashboard-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
-        .card { background: var(--card); border-radius: 20px; border: 1px solid #334155; padding: 25px; margin-bottom: 20px; }
-
-        .hero { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); position: relative; overflow: hidden; }
-        .hero::before { content: ''; position: absolute; top: -50px; right: -50px; width: 150px; height: 150px; background: var(--accent); filter: blur(100px); opacity: 0.1; }
-
+        .card { background: var(--card); border-radius: 20px; border: 1px solid #334155; padding: 25px; margin-bottom: 20px; position: relative; }
+        .hero { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); }
         .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
-        .stat-item { background: rgba(15, 23, 42, 0.5); padding: 15px; border-radius: 15px; border: 1px solid #334155; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .stat-item i { color: var(--accent); font-size: 1.2rem; margin-bottom: 8px; }
-        .stat-item span { display: block; font-size: 0.8rem; color: var(--muted); }
-        .stat-item b { font-size: 1.1rem; }
-
+        .stat-item { background: rgba(15, 23, 42, 0.5); padding: 15px; border-radius: 15px; border: 1px solid #334155; text-align: center; }
         .steps { list-style: none; padding: 0; margin: 20px 0; }
-        .step-item { display: flex; align-items: center; gap: 15px; margin-bottom: 15px; opacity: 0.4; transition: 0.3s; }
+        .step-item { display: flex; align-items: center; gap: 15px; margin-bottom: 15px; opacity: 0.4; }
         .step-item.active { opacity: 1; color: var(--accent); font-weight: bold; }
-
-        .btn-exam {
-            background: var(--accent); color: #000; border: none; padding: 15px; border-radius: 12px;
-            font-size: 0.9rem; font-weight: bold; cursor: pointer; transition: 0.3s;
-            display: flex; align-items: center; justify-content: center; gap: 10px; text-decoration: none; width: 100%; box-sizing: border-box;
-        }
-        .btn-exam:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(255, 202, 40, 0.2); }
-
-        .btn-status {
-            margin-top: 15px; background: #334155; color: var(--accent); border: 1px solid var(--accent);
-            padding: 10px; border-radius: 10px; text-decoration: none; display: block; text-align: center;
-            font-size: 0.9rem; font-weight: bold; transition: 0.3s;
-        }
-
+        .btn-exam { background: var(--accent); color: #000; border: none; padding: 15px; border-radius: 12px; font-size: 0.9rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; text-decoration: none; width: 100%; box-sizing: border-box; }
         .announcement { background: rgba(255, 202, 40, 0.05); border-left: 4px solid var(--accent); padding: 15px; border-radius: 0 15px 15px 0; }
-        .btn-logout { background: #ef4444; border: none; color: #fff; cursor: pointer; font-size: 0.8rem; padding: 8px 15px; border-radius: 8px; display: flex; align-items: center; gap: 8px; font-weight: bold; }
-
+        .btn-logout { background: #ef4444; border: none; color: #fff; cursor: pointer; padding: 8px 15px; border-radius: 8px; font-weight: bold; }
         @media (max-width: 850px) { .dashboard-grid { grid-template-columns: 1fr; } }
     </style>
 </head>
@@ -71,13 +37,11 @@
 <header>
     <div style="font-weight: 800; font-size: 1.2rem; color: var(--accent);">DCS <span style="color: white;">Recruitment</span></div>
     <div style="display: flex; align-items: center; gap: 15px;">
-        <div class="user-nav" onclick="window.location.href='status.html'">
-            <span id="header-nama">Memuat...</span>
+        <div class="user-nav">
+            <span id="header-nama">...</span>
             <div class="avatar" id="avatar-initial">?</div>
         </div>
-        <button class="btn-logout" onclick="logout()">
-            <i class="fa-solid fa-power-off"></i> Keluar
-        </button>
+        <button class="btn-logout" onclick="logout()"><i class="fa-solid fa-power-off"></i></button>
     </div>
 </header>
 
@@ -86,39 +50,30 @@
         <div class="main-content">
             <div class="card hero">
                 <h1 id="welcome-user">Halo!</h1>
-                <p style="color: var(--muted); margin: 10px 0 20px;">Silakan selesaikan daftar ujian di bawah ini.</p>
-                
+                <p style="color: var(--muted);">Berikut adalah daftar asesmen yang harus Anda selesaikan.</p>
                 <div class="stats-grid">
-                    <div class="stat-item">
-                        <i class="fa-solid fa-clipboard-list"></i>
-                        <span>Total Ujian</span>
-                        <b id="total-ujian">0</b>
-                    </div>
-                    <div class="stat-item">
-                        <i class="fa-solid fa-check-double"></i>
-                        <span>Selesai</span>
-                        <b id="ujian-selesai">0</b>
-                    </div>
+                    <div class="stat-item"><i class="fa-solid fa-book"></i><br><span>Total Ujian</span><br><b id="total-u">0</b></div>
+                    <div class="stat-item"><i class="fa-solid fa-circle-check"></i><br><span>Selesai</span><br><b id="done-u">0</b></div>
                 </div>
             </div>
 
             <div id="exam-list-container">
-                <p style="text-align: center; color: var(--muted);">Memuat daftar ujian...</p>
-            </div>
+                </div>
         </div>
 
         <div class="sidebar">
             <div class="card">
-                <h4>Status Lamaran</h4>
-                <div id="stat-status" style="font-weight: bold; margin-bottom: 10px;">Waiting...</div>
-                <div id="status-link-container"></div>
+                <h4 style="margin-top:0">Alur Rekrutmen</h4>
+                <ul class="steps">
+                    <li class="step-item active"><i class="fa-solid fa-circle-check"></i> Registrasi Akun</li>
+                    <li class="step-item" id="step-exam"><i class="fa-solid fa-circle-dot"></i> Proses Asesmen</li>
+                    <li class="step-item" id="step-final"><i class="fa-solid fa-circle-dot"></i> Hasil Akhir</li>
+                </ul>
             </div>
 
             <div class="card announcement">
-                <h4 style="margin: 0; color: var(--accent);"><i class="fa-solid fa-circle-info"></i> Info</h4>
-                <p style="font-size: 0.85rem; margin-top: 10px;">
-                    Selesaikan semua ujian untuk meningkatkan peluang lolos seleksi.
-                </p>
+                <h4 style="margin:0; color:var(--accent)">Panduan</h4>
+                <p style="font-size:0.8rem; line-height:1.5">Gunakan browser terbaru dan pastikan koneksi stabil sebelum memulai ujian.</p>
             </div>
         </div>
     </div>
@@ -126,79 +81,47 @@
 
 <script>
     const SUPABASE_URL = "https://bzlewbetssmjrsmfbcmy.supabase.co";
-    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ6bGV3YmV0c3NtanJzbWZiY215Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzNDA2MjgsImV4cCI6MjA5MTkxNjYyOH0.qO2AHNwe9Rlh1DImyJJZLzxXoHPSTRKmQZYwWqz1rjQ";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."; // Isi Key Anda
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     async function initDashboard() {
-        let localUser = JSON.parse(localStorage.getItem('dcs_current_user'));
-        if (!localUser) { window.location.href = 'index.html'; return; }
+        let user = JSON.parse(localStorage.getItem('dcs_current_user'));
+        if (!user) { window.location.href = 'index.html'; return; }
 
-        // Refresh data user
-        const { data: dbUser } = await _supabase.from('applicants').select('*').eq('email', localUser.email).single();
-        if (dbUser) {
-            localStorage.setItem('dcs_current_user', JSON.stringify(dbUser));
-            localUser = dbUser;
-        }
+        const { data: dbUser } = await _supabase.from('applicants').select('*').eq('email', user.email).single();
+        if (dbUser) { localStorage.setItem('dcs_current_user', JSON.stringify(dbUser)); user = dbUser; }
 
-        // Update Header
-        document.getElementById('header-nama').innerText = localUser.nama;
-        document.getElementById('avatar-initial').innerText = localUser.nama.charAt(0).toUpperCase();
-        document.getElementById('welcome-user').innerText = `Halo, ${localUser.nama.split(' ')[0]}!`;
+        document.getElementById('header-nama').innerText = user.nama;
+        document.getElementById('avatar-initial').innerText = user.nama.charAt(0);
+        document.getElementById('welcome-user').innerText = `Halo, ${user.nama.split(' ')[0]}!`;
 
-        // Ambil Daftar Ujian dari Tabel 'list_ujian'
-        const { data: listUjian, error } = await _supabase.from('list_ujian').select('*').eq('aktif', true).order('id', {ascending: true});
-        
+        const { data: exams } = await _supabase.from('list_ujian').select('*').eq('aktif', true);
         const container = document.getElementById('exam-list-container');
-        if (error || !listUjian) {
-            container.innerHTML = "<p>Gagal memuat ujian.</p>";
-            return;
-        }
-
-        container.innerHTML = ""; // Bersihkan loading
-        let countDone = 0;
-
-        // Loop untuk menampilkan setiap ujian
-        listUjian.forEach(exam => {
-            // Cek apakah user sudah mengerjakan ujian ini
-            // Logika: Kita cek di kolom JSON 'hasil_ujian' apakah slug ini sudah ada nilainya
-            const hasRecord = localUser.hasil_ujian && localUser.hasil_ujian[exam.slug] !== undefined;
-
-            if (hasRecord) countDone++;
+        container.innerHTML = "";
+        
+        let doneCount = 0;
+        exams.forEach(ex => {
+            const isDone = user.hasil_ujian && user.hasil_ujian[ex.slug] !== undefined;
+            if (isDone) doneCount++;
 
             container.innerHTML += `
-                <div class="card" style="border-left: 5px solid ${hasRecord ? 'var(--success)' : 'var(--accent)'}">
-                    <div style="display:flex; justify-content:space-between; align-items:start;">
-                        <div>
-                            <h3 style="margin:0">${exam.nama_ujian}</h3>
-                            <p style="color:var(--muted); font-size:0.85rem; margin:10px 0;">${exam.deskripsi}</p>
-                            <small style="color:var(--accent)"><i class="fa-regular fa-clock"></i> ${exam.durasi} Menit</small>
-                        </div>
-                        <div style="text-align:right">
-                            ${hasRecord ? 
-                                `<span style="color:var(--success); font-weight:bold;"><i class="fa-solid fa-circle-check"></i> Selesai</span>` : 
-                                `<span style="color:var(--danger); font-weight:bold;">Belum</span>`
-                            }
-                        </div>
-                    </div>
-                    <div style="margin-top:20px">
-                        ${hasRecord ? 
-                            `<button class="btn-exam" style="background:#334155; color:var(--muted); cursor:not-allowed;" disabled>Sudah Dikerjakan</button>` : 
-                            `<a href="test/kerjakan/soal.html?type=${exam.slug}" class="btn-exam">Mulai Ujian <i class="fa-solid fa-arrow-right"></i></a>`
-                        }
-                    </div>
-                </div>
-            `;
+                <div class="card" style="border-left: 5px solid ${isDone ? 'var(--success)' : 'var(--accent)'}">
+                    <h3>${ex.nama_ujian}</h3>
+                    <p style="color:var(--muted); font-size:0.85rem">${ex.deskripsi}</p>
+                    ${isDone ? 
+                        `<div style="color:var(--success); font-weight:bold"><i class="fa-solid fa-check"></i> Sudah Selesai</div>` : 
+                        `<a href="test/kerjakan/soal.html?type=${ex.slug}" class="btn-exam">Mulai Ujian</a>`}
+                </div>`;
         });
 
-        document.getElementById('total-ujian').innerText = listUjian.length;
-        document.getElementById('ujian-selesai').innerText = countDone;
+        document.getElementById('total-u').innerText = exams.length;
+        document.getElementById('done-u').innerText = doneCount;
+
+        if (doneCount > 0) document.getElementById('step-exam').classList.add('active');
+        if (user.status === 'Lolos' || user.status === 'Gagal') document.getElementById('step-final').classList.add('active');
     }
 
-    function logout() {
-        localStorage.clear();
-        window.location.href = 'index.html';
-    }
-
+    function logout() { localStorage.clear(); window.location.href = 'index.html'; }
     initDashboard();
 </script>
 </body>

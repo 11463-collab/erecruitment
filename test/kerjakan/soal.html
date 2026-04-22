@@ -100,7 +100,7 @@
 </div>
 
 <script>
-    // --- 1. KONFIGURASI & STATE ---
+// --- 1. KONFIGURASI & STATE ---
 const SUPABASE_URL = "https://bzlewbetssmjrsmfbcmy.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ6bGV3YmV0c3NtanJzbWZiY215Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzNDA2MjgsImV4cCI6MjA5MTkxNjYyOH0.qO2AHNwe9Rlh1DImyJJZLzxXoHPSTRKmQZYwWqz1rjQ";
 const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -110,20 +110,18 @@ let questions = [];
 let currentIdx = 0;
 let timerInterval;
 
-// Load data dari storage (Persistent Data)
+// Load data dari storage
 const userData = JSON.parse(localStorage.getItem('dcs_current_user'));
 let userAnswers = JSON.parse(sessionStorage.getItem('dcs_answers')) || {};
 let violations = parseInt(sessionStorage.getItem('dcs_violations')) || 0;
 
-// Proteksi Halaman
-if (!userData) {
-    window.location.href = "index.html";
-}
+// Proteksi Halaman Dasar (Harus Login)
+if (!userData) { window.location.href = "index.html"; }
 
 // --- 2. INISIALISASI UJIAN ---
 async function initExam() {
     try {
-        // Cek Status Pendaftaran & Waktu
+        // Cek Status Ujian & Waktu di Database
         const { data: config, error: errCfg } = await _supabase.from('status').select('*').eq('id', 1).single();
         if (errCfg || !config) throw new Error("Gagal memuat konfigurasi.");
 
@@ -142,10 +140,10 @@ async function initExam() {
         document.getElementById('userName').innerText = userData.nama;
         document.getElementById('displayPosisi').innerText = `Posisi: ${userData.posisi}`;
         
-        // Update UI Pelanggaran (Penting jika user refresh)
+        // Jalankan UI Pelanggaran
         updateViolationUI(); 
 
-        // Jalankan Sistem
+        // Jalankan Timer & Tampilkan Soal Pertama
         startTimer(config.durasi_ujian * 60);
         showQuestion(0);
         renderNumberGrid();
@@ -175,7 +173,7 @@ function startTimer(duration) {
     }, 1000);
 }
 
-// --- 4. RENDER SOAL & NAVIGASI ---
+// --- 4. RENDER SOAL & AUTO-SYNC (UPDATE KE DATABASE TIAP KLIK) ---
 function showQuestion(idx) {
     currentIdx = idx;
     const q = questions[idx];
@@ -199,7 +197,6 @@ function showQuestion(idx) {
         </div>
     `;
 
-    // Kontrol Tombol
     document.getElementById('btnPrev').style.visibility = idx === 0 ? 'hidden' : 'visible';
     const isLast = idx === questions.length - 1;
     document.getElementById('btnNext').style.display = isLast ? 'none' : 'block';
@@ -208,10 +205,32 @@ function showQuestion(idx) {
     renderNumberGrid();
 }
 
-function selectAnswer(qId, choice) {
+// Fungsi utama untuk Update Jawaban & Skor Real-time
+async function selectAnswer(qId, choice) {
+    // 1. Update UI dulu biar responsif
     userAnswers[qId] = choice;
     sessionStorage.setItem('dcs_answers', JSON.stringify(userAnswers));
     showQuestion(currentIdx);
+
+    // 2. Hitung skor terbaru
+    let currentScore = 0;
+    const listJawabanAngka = questions.map(q => {
+        const ans = userAnswers[q.id];
+        if (ans === q.jawaban_benar) currentScore++;
+        return mapHurufKeAngka[ans] || 0;
+    });
+    const finalScoreNow = Math.round((currentScore / questions.length) * 100);
+
+    // 3. Kirim ke Supabase secara background (Tanpa loading screen biar gak ganggu)
+    const { error } = await _supabase.from('applicants')
+        .update({ 
+            skor_ujian: finalScoreNow, 
+            Jawaban: listJawabanAngka,
+            status: 'Sedang Ujian' 
+        })
+        .eq('email', userData.email);
+
+    if (error) console.error("Gagal Auto-sync ke DB:", error.message);
 }
 
 function changeQuestion(idx) {
@@ -228,16 +247,13 @@ function renderNumberGrid() {
     `).join('');
 }
 
-// --- 5. SISTEM PELANGGARAN (ANTI-CHEAT) ---
+// --- 5. SISTEM PELANGGARAN (DETEKSI PINDAH TAB) ---
 function updateViolationUI() {
     const vCountEl = document.getElementById('vCount');
     const vBarEl = document.getElementById('vBar');
     if (vCountEl) vCountEl.innerText = violations;
     if (vBarEl) vBarEl.style.width = (violations / 3 * 100) + '%';
-
-    if (violations >= 3) {
-        blockAndSubmit();
-    }
+    if (violations >= 3) blockAndSubmit();
 }
 
 function handleViolation() {
@@ -248,9 +264,8 @@ function handleViolation() {
     if (violations < 3) {
         Swal.fire({
             title: 'Peringatan!',
-            text: `Dilarang keluar halaman. Pelanggaran: ${violations}/3`,
+            text: `Dilarang keluar halaman/pindah tab! Pelanggaran: ${violations}/3`,
             icon: 'warning',
-            confirmButtonText: 'Kembali Ujian',
             allowOutsideClick: false
         });
     }
@@ -260,26 +275,27 @@ function blockAndSubmit() {
     clearInterval(timerInterval);
     Swal.fire({
         title: 'AKSES DIBLOKIR',
-        text: 'Anda melanggar aturan sebanyak 3 kali. Hasil dikirim otomatis.',
+        text: 'Batas pelanggaran habis. Hasil dikirim otomatis.',
         icon: 'error',
         allowOutsideClick: false,
-        confirmButtonText: 'Selesai'
+        confirmButtonText: 'Keluar'
     }).then(() => finishExam(true));
 }
 
+// Deteksi saat user meminimalkan browser atau pindah tab
 document.addEventListener('visibilitychange', () => {
     if (document.hidden && violations < 3) handleViolation();
 });
 
-// --- 6. SIMPAN HASIL KE DATABASE ---
+// --- 6. SELESAI UJIAN ---
 async function finishExam(isAuto = false) {
     if (!isAuto) {
         const res = await Swal.fire({
-            title: 'Kirim Jawaban?',
-            text: "Pastikan semua sudah terisi.",
+            title: 'Kirim Hasil?',
+            text: "Ujian akan berakhir dan jawaban dikunci.",
             icon: 'question',
             showCancelButton: true,
-            confirmButtonText: 'Ya, Kirim'
+            confirmButtonText: 'Ya, Selesai'
         });
         if (!res.isConfirmed) return;
     }
@@ -288,39 +304,28 @@ async function finishExam(isAuto = false) {
     Swal.fire({ title: 'Menyimpan...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
     try {
-        let score = 0;
-        
-        // Konversi jawaban ke format Array Angka [1,2,4,3...]
-        const listJawabanAngka = questions.map(q => {
-            const ans = userAnswers[q.id];
-            if (ans === q.jawaban_benar) score++;
-            return mapHurufKeAngka[ans] || 0; // 0 jika kosong
-        });
-
-        const finalScore = Math.round((score / questions.length) * 100);
-
-        // Update ke Tabel Applicants
+        // Update status akhir dan jumlah pelanggaran terakhir
         const { error } = await _supabase.from('applicants')
             .update({ 
-                skor_ujian: finalScore, 
                 status: 'Sudah Ujian',
-                Jawaban: listJawabanAngka,
                 jumlah_pelanggaran: violations
             })
             .eq('email', userData.email);
 
         if (error) throw error;
 
+        // Bersihkan data lokal
         sessionStorage.clear();
         localStorage.removeItem('dcs_current_user');
         window.location.href = "success.html";
 
     } catch (err) {
         console.error(err);
-        Swal.fire('Gagal Simpan', err.message, 'error');
+        Swal.fire('Error', err.message, 'error');
     }
 }
 
+// Jalankan program
 initExam();
 </script>
 </body>

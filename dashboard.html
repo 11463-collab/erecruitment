@@ -48,8 +48,8 @@
         .step-item.active { opacity: 1; color: var(--accent); font-weight: bold; }
 
         .btn-exam {
-            background: var(--accent); color: #000; border: none; padding: 18px; border-radius: 12px;
-            font-size: 1rem; font-weight: bold; cursor: pointer; transition: 0.3s;
+            background: var(--accent); color: #000; border: none; padding: 15px; border-radius: 12px;
+            font-size: 0.9rem; font-weight: bold; cursor: pointer; transition: 0.3s;
             display: flex; align-items: center; justify-content: center; gap: 10px; text-decoration: none; width: 100%; box-sizing: border-box;
         }
         .btn-exam:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(255, 202, 40, 0.2); }
@@ -57,13 +57,10 @@
         .btn-status {
             margin-top: 15px; background: #334155; color: var(--accent); border: 1px solid var(--accent);
             padding: 10px; border-radius: 10px; text-decoration: none; display: block; text-align: center;
-            font-size: 0.9rem; font-weight: bold; transition: 0.3s; padding-bottom: 5px;
+            font-size: 0.9rem; font-weight: bold; transition: 0.3s;
         }
-        .btn-status:hover { background: var(--accent); color: #000; }
 
         .announcement { background: rgba(255, 202, 40, 0.05); border-left: 4px solid var(--accent); padding: 15px; border-radius: 0 15px 15px 0; }
-        .announcementred { background: rgba(239, 68, 68, 0.05); border-left: 4px solid var(--danger); padding: 15px; border-radius: 0 15px 15px 0; }
-
         .btn-logout { background: #ef4444; border: none; color: #fff; cursor: pointer; font-size: 0.8rem; padding: 8px 15px; border-radius: 8px; display: flex; align-items: center; gap: 8px; font-weight: bold; }
 
         @media (max-width: 850px) { .dashboard-grid { grid-template-columns: 1fr; } }
@@ -75,7 +72,7 @@
     <div style="font-weight: 800; font-size: 1.2rem; color: var(--accent);">DCS <span style="color: white;">Recruitment</span></div>
     <div style="display: flex; align-items: center; gap: 15px;">
         <div class="user-nav" onclick="window.location.href='status.html'">
-            <span id="header-nama" style="font-size: 0.9rem;">Memuat...</span>
+            <span id="header-nama">Memuat...</span>
             <div class="avatar" id="avatar-initial">?</div>
         </div>
         <button class="btn-logout" onclick="logout()">
@@ -88,72 +85,40 @@
     <div class="dashboard-grid">
         <div class="main-content">
             <div class="card hero">
-                <h1 id="welcome-user" style="margin: 0;">Halo!</h1>
-                <p style="color: var(--muted); margin: 10px 0 20px;">Berikut adalah ringkasan proses lamaran Anda saat ini.</p>
+                <h1 id="welcome-user">Halo!</h1>
+                <p style="color: var(--muted); margin: 10px 0 20px;">Silakan selesaikan daftar ujian di bawah ini.</p>
                 
                 <div class="stats-grid">
                     <div class="stat-item">
-                        <i class="fa-solid fa-user-clock"></i>
-                        <span>Hasil Seleksi</span>
-                        <b id="stat-status">Waiting...</b>
-                        <div id="status-link-container"></div>
+                        <i class="fa-solid fa-clipboard-list"></i>
+                        <span>Total Ujian</span>
+                        <b id="total-ujian">0</b>
                     </div>
                     <div class="stat-item">
-                        <i class="fa-solid fa-file-circle-check"></i>
-                        <span>Ujian Asesmen</span>
-                        <b id="stat-ujian">Belum</b>
+                        <i class="fa-solid fa-check-double"></i>
+                        <span>Selesai</span>
+                        <b id="ujian-selesai">0</b>
                     </div>
                 </div>
             </div>
 
-            <div class="card">
-                <h3 style="margin-top: 0;"><i class="fa-solid fa-briefcase" style="color: var(--accent); margin-right: 10px;"></i> Detail Lamaran</h3>
-                <div style="display: flex; justify-content: space-between; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 12px;">
-                    <div>
-                        <span style="color: var(--muted); font-size: 0.8rem;">Posisi:</span>
-                        <div id="disp-posisi" style="font-weight: bold;">-</div>
-                    </div>
-                    <div style="text-align: right;">
-                        <span style="color: var(--muted); font-size: 0.8rem;">Wilayah:</span>
-                        <div id="disp-daop" style="font-weight: bold;">-</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="card" id="exam-card">
-                <p>Sinkronisasi data...</p>
+            <div id="exam-list-container">
+                <p style="text-align: center; color: var(--muted);">Memuat daftar ujian...</p>
             </div>
         </div>
 
         <div class="sidebar">
             <div class="card">
-                <h4 style="margin-top: 0;">Alur Rekrutmen</h4>
-                <ul class="steps">
-                    <li class="step-item active"><i class="fa-solid fa-circle-check"></i> Registrasi Akun</li>
-                    <li class="step-item" id="step-exam"><i class="fa-solid fa-circle-dot"></i> Ujian Asesmen Online</li>
-                    <li class="step-item" id="step-final"><i class="fa-solid fa-circle-dot"></i> Hasil Seleksi Akhir</li>
-                </ul>
+                <h4>Status Lamaran</h4>
+                <div id="stat-status" style="font-weight: bold; margin-bottom: 10px;">Waiting...</div>
+                <div id="status-link-container"></div>
             </div>
 
             <div class="card announcement">
-                <h4 style="margin: 0; color: var(--accent);"><i class="fa-solid fa-circle-info"></i> Panduan Ujian</h4>
-                <p style="font-size: 0.85rem; margin-top: 10px; line-height: 1.6;">
-                    • Pastikan koneksi internet anda stabil.<br>
-                    • Gunakan browser terbaru.<br>
-                    • Patuhi aturan ujian yang berlaku.
+                <h4 style="margin: 0; color: var(--accent);"><i class="fa-solid fa-circle-info"></i> Info</h4>
+                <p style="font-size: 0.85rem; margin-top: 10px;">
+                    Selesaikan semua ujian untuk meningkatkan peluang lolos seleksi.
                 </p>
-            </div>
-
-            <div class="card announcementred">
-                <h4 style="margin: 0; color: #f87171;"><i class="fa-solid fa-triangle-exclamation"></i> Peringatan</h4>
-                <p style="font-size: 0.82rem; margin-top: 10px; line-height: 1.5; color: #fca5a5;">
-                    Sistem mendeteksi kecurangan secara otomatis. Pelanggaran berakibat <b>Diskualifikasi</b>:
-                </p>
-                <ul style="font-size: 0.8rem; margin-top: 8px; padding-left: 15px; color: #fca5a5; line-height: 1.6;">
-                    <li>Membuka tab/aplikasi lain.</li>
-                    <li>Screenshot atau merekam soal.</li>
-                    <li>Bekerja sama dengan orang lain.</li>
-                </ul>
             </div>
         </div>
     </div>
@@ -165,137 +130,75 @@
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     async function initDashboard() {
-        // 1. Ambil data dari LocalStorage
         let localUser = JSON.parse(localStorage.getItem('dcs_current_user'));
-        if (!localUser) { window.location.href = 'index'; return; }
+        if (!localUser) { window.location.href = 'index.html'; return; }
 
-        // 2. Tarik data terbaru dari Supabase (Refresh Data)
-        const { data: dbUser, error } = await _supabase
-            .from('applicants')
-            .select('*')
-            .eq('email', localUser.email)
-            .single();
-
-        if (!error && dbUser) {
+        // Refresh data user
+        const { data: dbUser } = await _supabase.from('applicants').select('*').eq('email', localUser.email).single();
+        if (dbUser) {
             localStorage.setItem('dcs_current_user', JSON.stringify(dbUser));
             localUser = dbUser;
         }
 
-        // 3. Update UI Header & Identitas
+        // Update Header
         document.getElementById('header-nama').innerText = localUser.nama;
         document.getElementById('avatar-initial').innerText = localUser.nama.charAt(0).toUpperCase();
         document.getElementById('welcome-user').innerText = `Halo, ${localUser.nama.split(' ')[0]}!`;
-        document.getElementById('disp-posisi').innerText = localUser.posisi || '-';
-        document.getElementById('disp-daop').innerText = localUser.daop || '-';
 
-        // 4. Logika Status Seleksi
-        const statStatus = document.getElementById('stat-status');
-        const linkContainer = document.getElementById('status-link-container');
+        // Ambil Daftar Ujian dari Tabel 'list_ujian'
+        const { data: listUjian, error } = await _supabase.from('list_ujian').select('*').eq('aktif', true).order('id', {ascending: true});
         
-        if (localUser.status === 'Lolos' || localUser.status === 'Gagal') {
-            statStatus.innerText = "Data tersedia"; 
-            statStatus.style.color = localUser.status === 'Lolos' ? "var(--success)" : "var(--danger)";
-            linkContainer.innerHTML = `<a href="status.html" class="btn-status">Lihat Detail <i class="fa-solid fa-arrow-right-long"></i></a>`;
-        } else if (localUser.status === 'diblokir') {
-            statStatus.innerText = "DIBLOKIR!"; 
-            statStatus.style.color = "var(--danger)";
-        } else {
-            statStatus.innerText = "Waiting..."; 
-            statStatus.style.color = "var(--muted)";
-            linkContainer.innerHTML = '';
+        const container = document.getElementById('exam-list-container');
+        if (error || !listUjian) {
+            container.innerHTML = "<p>Gagal memuat ujian.</p>";
+            return;
         }
 
-        // 5. Cek Kondisi Ujian & Pelanggaran
-        const statUjian = document.getElementById('stat-ujian');
-        const examCard = document.getElementById('exam-card');
-        const stepExam = document.getElementById('step-exam');
-        const stepFinal = document.getElementById('step-final');
+        container.innerHTML = ""; // Bersihkan loading
+        let countDone = 0;
 
-        // Flag Kondisi
-        const hasFinishedExam = localUser.status === 'Sudah Ujian' || (localUser.skor_ujian !== null && localUser.skor_ujian > 0);
-        const isBanned = (localUser.jumlah_pelanggaran >= 3);
+        // Loop untuk menampilkan setiap ujian
+        listUjian.forEach(exam => {
+            // Cek apakah user sudah mengerjakan ujian ini
+            // Logika: Kita cek di kolom JSON 'hasil_ujian' apakah slug ini sudah ada nilainya
+            const hasRecord = localUser.hasil_ujian && localUser.hasil_ujian[exam.slug] !== undefined;
 
-        // RENDER KARTU UJIAN BERDASARKAN KONDISI
-        if (hasFinishedExam) {
-            // KONDISI A: SUDAH SELESAI UJIAN
-            statUjian.innerText = "Sudah";
-            statUjian.style.color = "var(--success)";
-            stepExam.classList.add('active');
-            stepExam.querySelector('i').className = "fa-solid fa-circle-check";
-            
-            if(localUser.status !== 'Pending' && localUser.status !== 'Sudah Ujian') {
-                stepFinal.classList.add('active');
-                stepFinal.querySelector('i').className = "fa-solid fa-circle-check";
-            }
+            if (hasRecord) countDone++;
 
-            examCard.innerHTML = `
-                <div style="text-align: center; padding: 15px;">
-                    <i class="fa-solid fa-check" style="font-size: 3rem; color: var(--success); margin-bottom: 15px;"></i>
-                    <h3>Ujian Selesai</h3>
-                    <p style="color: var(--muted); font-size: 0.9rem;">
-                        Terima kasih telah berpartisipasi. Hasil asesmen Anda sudah tersimpan di sistem kami.
-                    </p>
-                </div>
-            `;
-        } 
-        else if (isBanned) {
-            // KONDISI B: DISKUALIFIKASI (Pelanggaran >= 3)
-            statUjian.innerText = "DIBLOKIR";
-            statUjian.style.color = "var(--danger)";
-            
-            stepExam.style.opacity = "1";
-            stepExam.style.color = "var(--danger)";
-            stepExam.innerHTML = `<i class="fa-solid fa-circle-xmark"></i> Diskualifikasi Ujian`;
-
-            examCard.style.border = "2px solid var(--danger)";
-            examCard.innerHTML = `
-                <div style="text-align: center; padding: 15px;">
-                    <i class="fa-solid fa-user-slash" style="font-size: 3rem; color: var(--danger); margin-bottom: 15px;"></i>
-                    <h3 style="color: var(--danger); margin-bottom: 5px;">AKSES DIBLOKIR</h3>
-                    <p style="color: var(--muted); font-size: 0.85rem; margin-bottom: 20px;">
-                        Sistem mendeteksi <b>${localUser.jumlah_pelanggaran} kali pelanggaran</b> protokol keamanan (pindah tab/minimize) selama sesi ujian.
-                    </p>
-                    <div style="background: var(--danger); color: white; padding: 18px; border-radius: 12px; font-weight: 800; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px;">
-                        ANDA DIDISKUALIFIKASI DARI RECRUITMENT
+            container.innerHTML += `
+                <div class="card" style="border-left: 5px solid ${hasRecord ? 'var(--success)' : 'var(--accent)'}">
+                    <div style="display:flex; justify-content:space-between; align-items:start;">
+                        <div>
+                            <h3 style="margin:0">${exam.nama_ujian}</h3>
+                            <p style="color:var(--muted); font-size:0.85rem; margin:10px 0;">${exam.deskripsi}</p>
+                            <small style="color:var(--accent)"><i class="fa-regular fa-clock"></i> ${exam.durasi} Menit</small>
+                        </div>
+                        <div style="text-align:right">
+                            ${hasRecord ? 
+                                `<span style="color:var(--success); font-weight:bold;"><i class="fa-solid fa-circle-check"></i> Selesai</span>` : 
+                                `<span style="color:var(--danger); font-weight:bold;">Belum</span>`
+                            }
+                        </div>
+                    </div>
+                    <div style="margin-top:20px">
+                        ${hasRecord ? 
+                            `<button class="btn-exam" style="background:#334155; color:var(--muted); cursor:not-allowed;" disabled>Sudah Dikerjakan</button>` : 
+                            `<a href="test/kerjakan/soal.html?type=${exam.slug}" class="btn-exam">Mulai Ujian <i class="fa-solid fa-arrow-right"></i></a>`
+                        }
                     </div>
                 </div>
             `;
-        } 
-        else {
-            // KONDISI C: BELUM UJIAN & AMAN
-            statUjian.innerText = "Belum";
-            statUjian.style.color = "var(--danger)";
-            
-            examCard.innerHTML = `
-                <h3 style="margin-top: 0;">Tugas Tertunda</h3>
-                <p style="color: var(--muted); font-size: 0.9rem; margin-bottom: 20px;">Silakan selesaikan <b>Asesmen Kompetensi Dasar</b> untuk melanjutkan proses seleksi.</p>
-                <a href="test/kerjakan/soal.html" class="btn-exam">
-                    <i class="fa-solid fa-play-circle"></i> Mulai Ujian Sekarang
-                </a>
-            `;
-        }
-    }
-
-    // Fungsi Logout
-    function logout() {
-        Swal.fire({
-            title: 'Keluar Sesi?',
-            text: "Anda harus login kembali untuk mengakses dashboard.",
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonColor: '#ffca28',
-            cancelButtonColor: '#ef4444',
-            confirmButtonText: 'Ya, Keluar',
-            cancelButtonText: 'Batal'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                localStorage.clear();
-                window.location.href = 'index.html';
-            }
         });
+
+        document.getElementById('total-ujian').innerText = listUjian.length;
+        document.getElementById('ujian-selesai').innerText = countDone;
     }
 
-    // Jalankan Dashboard
+    function logout() {
+        localStorage.clear();
+        window.location.href = 'index.html';
+    }
+
     initDashboard();
 </script>
 </body>
